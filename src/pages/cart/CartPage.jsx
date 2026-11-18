@@ -75,12 +75,12 @@ function CartRow({ line, max }) {
             {line.product.title}
           </Link>
           <small>
-            <Truck size={11} /> Free standard delivery
+            <Truck size={11} /> Miễn phí vận chuyển
           </small>
         </div>
       </div>
       <div className={s.variation}>
-        <span>Variation:</span>
+        <span>Phân loại hàng:</span>
         <p>
           {line.variant}
           {line.size ? ` · ${line.size}` : ""}
@@ -122,7 +122,7 @@ function CartRow({ line, max }) {
             <Plus size={12} />
           </button>
         </div>
-        <small>Up to {max} available</small>
+        <small>Còn {max} sản phẩm</small>
       </div>
       <strong className={s.lineTotal}>
         {money(line.product.price * line.quantity)}
@@ -133,10 +133,10 @@ function CartRow({ line, max }) {
           aria-label={`Remove ${name}`}
           onClick={() => removeItem(line.id)}
         >
-          Delete
+          Xóa
         </button>
         <Link to={`/category/${encodeURIComponent(line.product.category)}`}>
-          Find similar
+          Tìm sản phẩm tương tự
           <ChevronRight size={11} />
         </Link>
       </div>
@@ -298,7 +298,7 @@ export default function CartPage() {
                   >
                     {appliedVoucher
                       ? appliedVoucher.code
-                      : "Select or enter a code"}
+                      : "Chọn hoặc nhập mã"}
                     <ChevronRight size={13} />
                   </button>
                   {appliedVoucher && (
@@ -317,8 +317,8 @@ export default function CartPage() {
                   <span>
                     {voucherEligibility.eligible
                       ? appliedVoucher.type === "shipping"
-                        ? "Shipping voucher selected"
-                        : "Voucher discount"
+                        ? "Voucher vận chuyển đã chọn"
+                        : "Voucher giảm giá"
                       : voucherEligibility.reason}
                   </span>
                   <strong>−{money(voucherDiscount)}</strong>
@@ -328,12 +328,12 @@ export default function CartPage() {
                 <label>
                   <input type="checkbox" disabled />
                   <Coins size={18} />
-                  Shopiz Coins
+                  Shopee Xu
                 </label>
                 <span>
                   {some
-                    ? "Coins are not available yet"
-                    : "Select products to use coins"}
+                    ? "Chưa có xu khả dụng"
+                    : "Chọn sản phẩm để dùng xu"}
                 </span>
                 <small>−{money(0)}</small>
               </div>
@@ -342,7 +342,7 @@ export default function CartPage() {
                   all={all}
                   some={some}
                   onChange={selectAll}
-                  label={`Select all (${lines.length})`}
+                  label={`Chọn tất cả (${lines.length})`}
                 />
                 <button
                   className={s.deleteSelected}
@@ -350,22 +350,21 @@ export default function CartPage() {
                   onClick={removeSelected}
                 >
                   <Trash2 size={14} />
-                  Delete selected
+                  Xóa đã chọn
                 </button>
                 <Link className={s.continueShopping} to="/">
-                  Continue shopping
+                  Tiếp tục mua sắm
                 </Link>
                 <div className={s.totals}>
                   <div>
                     <span>
-                      Total ({selectedCount}{" "}
-                      {selectedCount === 1 ? "item" : "items"})
+                      Tổng thanh toán ({selectedCount}{" "}
+                      {selectedCount === 1 ? "sản phẩm" : "sản phẩm"}):
                     </span>
                     <strong data-testid="cart-total">{money(total)}</strong>
                   </div>
                   <small>
-                    You save {money(savings + voucherDiscount)} · Standard
-                    delivery is free
+                    Tiết kiệm {money(savings + voucherDiscount)} · Miễn phí vận chuyển
                   </small>
                 </div>
                 <button
@@ -373,7 +372,7 @@ export default function CartPage() {
                   disabled={!some}
                   onClick={() => navigate("/checkout")}
                 >
-                  Checkout ({selectedCount})
+                  Mua Hàng ({selectedCount})
                 </button>
               </div>
             </div>
@@ -381,8 +380,8 @@ export default function CartPage() {
         )}
       </div>
       <ProductGrid
-        title="A LITTLE MORE TO LOVE"
-        subtitle="Everyday favorites for your cart"
+        title="CÓ THỂ BẠN CŨNG THÍCH"
+        subtitle="Gợi ý sản phẩm phù hợp cho bạn"
       />
       {voucherOpen && <VoucherDialog onClose={() => setVoucherOpen(false)} />}
     </div>

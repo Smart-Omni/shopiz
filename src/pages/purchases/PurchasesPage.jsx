@@ -73,11 +73,13 @@ export default function PurchasesPage() {
         itemId: it.item_id,
         modelId: it.model_id,
         title: it.item_name,
-        variant: it.model_name ? it.model_name.split(",")[0]?.trim() : "Standard",
+        variant: it.model_name ? it.model_name.split(",")[0]?.trim() : "Tiêu chuẩn",
         size: it.model_name && it.model_name.includes(",") ? it.model_name.split(",")[1]?.trim() : "",
-        quantity: it.model_quantity_purchased || 1,
-        price: it.model_discounted_price || it.model_original_price || 0,
+        quantity: it.quantity || it.model_quantity_purchased || 1,
+        price: it.item_price || it.model_discounted_price || it.model_original_price || 0,
         image: it.image || "",
+        shopId: o.shop_id,
+        shopName: o.shop_name,
       })),
       subtotal: Number(o.total_amount || 0),
       shippingFee: Number(o.buyer_paid_shipping_fee || 0),
@@ -93,10 +95,6 @@ export default function PurchasesPage() {
   }
 
   const loadBackendOrders = () => {
-    const token =
-      localStorage.getItem("shopiz-auth-token") ||
-      sessionStorage.getItem("shopiz-auth-token");
-    if (!token) return;
     orderService
       .getOrders(buyerId)
       .then((serverOrders) => {
@@ -104,7 +102,9 @@ export default function PurchasesPage() {
           setBackendOrders(serverOrders.map(mapBackendOrder));
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("Could not load backend orders:", err);
+      });
   };
 
   useEffect(() => {
@@ -131,7 +131,7 @@ export default function PurchasesPage() {
 
   const all = [
     ...backendOrders,
-    ...orders.filter((o) => !backendOrders.some((b) => b.id === o.id)),
+    ...orders.filter((o) => !backendOrders.some((b) => b.id === o.id || b.orderSn === o.id || b.id === o.orderSn)),
   ];
 
   async function handleConfirmDelivery(order) {
@@ -337,17 +337,17 @@ export default function PurchasesPage() {
                         }
                       >
                         <MessageCircle size={12} />
-                        Chat
+                        Chat Ngay
                       </button>
                       <Link className={s.visit} to={`/shop/${group.shop.id}`}>
                         <Store size={12} />
-                        View Shop
+                        Xem Shop
                       </Link>
                       <div className={s.status}>
                         {orderStatus(order) === "completed" && (
                           <span>
                             <Truck size={14} />
-                            Delivered successfully
+                            Giao hàng thành công
                           </span>
                         )}
                         <strong>{statusLabel(order)}</strong>
@@ -410,17 +410,17 @@ export default function PurchasesPage() {
                     </time>
                   </div>
                   <p className={s.total}>
-                    Order Total:<strong>{money(order.total)}</strong>
+                    Thành tiền: <strong>{money(order.total)}</strong>
                   </p>
                   <div className={s.actions}>
                     <span>
                       {orderStatus(order) === "cancelled"
                         ? order.isSample
-                          ? "Cancelled in the sample history"
-                          : "Cancelled by you"
+                          ? "Đã hủy trong lịch sử mẫu"
+                          : "Đã hủy bởi bạn"
                         : orderStatus(order) === "completed"
-                          ? "Thank you for shopping with Shopiz"
-                          : "Awaiting seller confirmation or shipping"}
+                          ? "Cảm ơn bạn đã mua sắm tại Shopiz"
+                          : "Đang chờ người bán xác nhận hoặc chuẩn bị giao hàng"}
                     </span>
                     {order.isBackend && (order.status === "to-receive" || order.backendStatus === "SHIPPED") ? (
                       <>
@@ -428,17 +428,17 @@ export default function PurchasesPage() {
                           className={s.primary}
                           onClick={() => handleConfirmDelivery(order)}
                         >
-                          Confirm Delivery
+                          Đã Nhận Được Hàng
                         </button>
                         <button
                           onClick={() =>
                             contactSeller(groups[0].shop, order)
                           }
                         >
-                          Contact Seller
+                          Liên Hệ Người Bán
                         </button>
                         <button onClick={() => buyAgain(order)}>
-                          Buy Again
+                          Mua Lại
                         </button>
                       </>
                     ) : orderStatus(order) === "completed" ? (
@@ -447,7 +447,7 @@ export default function PurchasesPage() {
                           className={s.primary}
                           onClick={() => setPopup({ type: "review", order })}
                         >
-                          {order.review ? "Edit Review" : "Review"}
+                          {order.review ? "Sửa Đánh Giá" : "Đánh Giá"}
                         </button>
                         <button
                           onClick={() => setPopup({ type: "return", order })}

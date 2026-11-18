@@ -196,29 +196,41 @@ function ProductDetail({ product: p }) {
         Number((b.category || "") === catTitle),
     )
     .slice(0, 6);
-  function showPreview() {
-    setQuantity(String(count));
-    preview.current.showModal();
-  }
   function addToCart() {
     setQuantity(String(count));
     const result = addItem({
       productId: p.id,
-      modelId: selectedModel?.model_id,
-      variant,
+      itemId: p.itemId || p.id,
+      modelId: selectedModel?.model_id || null,
+      variant: selectedModel?.model_name || variant,
       size,
       quantity: count,
       price: currentPrice,
+      original: currentOriginal,
+      title: p.title,
+      image: p.image,
+      shopId: p.shopId || p.seller?.id || p.seller?.shop_id,
+      shopName: p.shopName || details.seller?.name || p.seller?.shop_name,
+      category: catTitle,
+      stock: currentStock,
       shippingFee,
-      carrierName: activeChannel?.channel_name || activeChannel?.channelName || "SPX Express",
+      carrierName: activeChannel?.carrier_name || activeChannel?.channel_name || activeChannel?.channelName || "Shopee Xpress",
     });
     setCartNotice({
       id: Date.now(),
       error: !result.added,
       text: result.added
-        ? `Product added to cart.${result.limited ? " Quantity adjusted to available stock." : ""}`
+        ? `Đã thêm sản phẩm vào giỏ hàng.${result.limited ? " Đã điều chỉnh theo số lượng kho." : ""}`
         : result.error,
     });
+    return result;
+  }
+
+  function handleBuyNow() {
+    const result = addToCart();
+    if (result && result.added) {
+      navigate("/checkout");
+    }
   }
   return (
     <div className={s.page}>
@@ -441,7 +453,7 @@ function ProductDetail({ product: p }) {
               <ShoppingCart size={19} />
               Thêm Vào Giỏ Hàng
             </button>
-            <button className={s.buyNow} onClick={showPreview}>
+            <button className={s.buyNow} onClick={handleBuyNow}>
               Mua Ngay
             </button>
           </div>

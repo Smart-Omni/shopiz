@@ -96,16 +96,27 @@ export function CartProvider({ children }) {
     const product =
       products.find((p) => String(p.id) === String(item.productId)) || {
         id: String(item.productId),
-        title: item.title || `Product #${item.productId}`,
+        itemId: item.itemId || item.productId,
+        modelId: item.modelId || null,
+        title: item.title || `Sản phẩm #${item.productId}`,
         image:
           item.image ||
           "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=500&q=85",
-        price: Number(item.price || 50),
-        original: Number(item.original || item.price || 50),
-        stock: 50,
-        discount: 0,
-        category: "General",
+        price: Number(item.price || 0),
+        original: Number(item.original || item.price || 0),
+        stock: item.stock || 50,
+        discount:
+          item.original > item.price
+            ? Math.round((1 - item.price / item.original) * 100)
+            : 0,
+        category: item.category || "General",
         mall: true,
+        shopId: item.shopId || null,
+        shopName: item.shopName || "",
+        seller: {
+          id: item.shopId || "shop-001",
+          name: item.shopName || "Official Store",
+        },
       };
     return {
       ...item,
@@ -116,30 +127,28 @@ export function CartProvider({ children }) {
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const selected = lines.filter((item) => item.selected);
   const selectedCount = selected.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal =
-    selected.reduce(
-      (sum, item) => sum + Math.round(item.product.price * 100) * item.quantity,
-      0,
-    ) / 100;
-  const savings =
-    selected.reduce(
-      (sum, item) =>
-        sum +
-        (Math.round(item.product.original * 100) -
-          Math.round(item.product.price * 100)) *
+  const subtotal = selected.reduce(
+    (sum, item) => sum + Math.round(Number(item.product.price) || 0) * item.quantity,
+    0,
+  );
+  const savings = selected.reduce(
+    (sum, item) =>
+      sum +
+      Math.max(
+        0,
+        (Math.round(Number(item.product.original) || Number(item.product.price)) -
+          Math.round(Number(item.product.price) || 0)) *
           item.quantity,
-      0,
-    ) / 100;
+      ),
+    0,
+  );
   const appliedVoucher = findVoucher(voucherCode);
   const voucherEligibility = voucherStatus(appliedVoucher, {
     subtotal,
     selectedCount,
   });
   const voucherDiscount = voucherEligibility.discount;
-  const total = Math.max(
-    0,
-    Math.round((subtotal - voucherDiscount) * 100) / 100,
-  );
+  const total = Math.max(0, subtotal - voucherDiscount);
   function applyVoucher(code, { shippingFee = 0 } = {}) {
     if (!code) {
       setVoucherCode(null);

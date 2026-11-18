@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Star, Upload, Image as ImageIcon } from "lucide-react";
 import CheckoutDialog from "../checkout/CheckoutDialog";
+import { money } from "../../data/catalog";
 import d from "../checkout/CheckoutPage.module.css";
 import s from "./PurchasesPage.module.css";
 export default function OrderActionDialog({ type, order, onClose, onSubmit }) {
@@ -209,10 +210,7 @@ export default function OrderActionDialog({ type, order, onClose, onSubmit }) {
                 <div>
                   <dt>Order Total</dt>
                   <dd>
-                    {new Intl.NumberFormat("en-US", {
-                      style: "currency",
-                      currency: "USD",
-                    }).format(order.total)}
+                    {money(order.total)}
                   </dd>
                 </div>
               </dl>

@@ -82,9 +82,9 @@ export default function SearchFilters({ params, update, clear, onClose }) {
             <input
               type="number"
               min="0"
-              step="0.01"
+              step="1000"
               aria-label="Minimum price"
-              placeholder="$ Min"
+              placeholder="₫ TỐI THIỂU"
               value={min}
               onChange={(e) => setMin(e.target.value)}
             />
@@ -92,9 +92,9 @@ export default function SearchFilters({ params, update, clear, onClose }) {
             <input
               type="number"
               min="0"
-              step="0.01"
+              step="1000"
               aria-label="Maximum price"
-              placeholder="$ Max"
+              placeholder="₫ TỐI ĐA"
               value={max}
               onChange={(e) => setMax(e.target.value)}
             />

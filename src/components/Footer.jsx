@@ -96,7 +96,7 @@ export default function Footer() {
         <div className={s.bottom}>
           <span>© {new Date().getFullYear()} Shopiz. All rights reserved.</span>
           <span>
-            Country & Region: Vietnam <i /> English <i /> Prices in USD
+            Quốc gia & Khu vực: Việt Nam <i /> Tiếng Việt <i /> Đơn vị tiền tệ: VNĐ
           </span>
         </div>
         <p className={s.disclaimer}>

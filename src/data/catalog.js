@@ -81,16 +81,10 @@ export const topSearches = [
 ];
 
 export const money = (value) => {
-  const num = Number(value) || 0;
-  if (num >= 1000) {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(num);
-  }
-  return new Intl.NumberFormat("en-US", {
+  const num = Math.round(Number(value) || 0);
+  return new Intl.NumberFormat("vi-VN", {
     style: "currency",
-    currency: "USD",
+    currency: "VND",
   }).format(num);
 };
 export const banners = [

@@ -94,8 +94,16 @@ export default function CheckoutPage() {
 
   const groups = useMemo(() => {
     return selected.reduce((list, line) => {
-      const shop = getProductDetails(line.product).seller;
-      const group = list.find((group) => group.shop.id === shop.id);
+      const seller =
+        line.product?.seller ||
+        (line.product?.shopId
+          ? { id: line.product.shopId, name: line.product.shopName || `Shop ${line.product.shopId}` }
+          : getProductDetails(line.product).seller);
+      const shopId = line.product?.shopId || seller?.id || "shop-001";
+      const shopName = line.product?.shopName || seller?.name || "Official Store";
+      const shop = { id: shopId, name: shopName };
+
+      const group = list.find((g) => String(g.shop.id) === String(shop.id));
       if (group) group.lines.push(line);
       else list.push({ shop, lines: [line] });
       return list;
@@ -180,24 +188,18 @@ export default function CheckoutPage() {
     return list.find((method) => method.id === shipping[shopId]) || list[0];
   };
 
-  const shippingFee =
-    groups.reduce(
-      (sum, group) => sum + Math.round(methodFor(group.shop.id).fee * 100),
-      0,
-    ) / 100;
+  const shippingFee = groups.reduce(
+    (sum, group) => sum + Math.round(Number(methodFor(group.shop.id)?.fee || 0)),
+    0,
+  );
   const discountStatus = voucherStatus(appliedVoucher, {
     subtotal,
     selectedCount,
     shippingFee,
   });
   const discount = discountStatus.discount;
-  const total = Math.max(
-    0,
-    (Math.round(subtotal * 100) +
-      Math.round(shippingFee * 100) -
-      Math.round(discount * 100)) /
-      100,
-  );
+  const total = Math.max(0, subtotal + shippingFee - discount);
+
   function saveAddress(next) {
     if (!next) return;
     setAddresses((current) =>
@@ -212,15 +214,16 @@ export default function CheckoutPage() {
     setEditor(null);
     setError("");
   }
+
   function placeOrder() {
     if (placing.current) return;
     if (Object.keys(validateAddress(address)).length) {
-      setError("Please complete your delivery address.");
+      setError("Vui lòng hoàn tất địa chỉ nhận hàng của bạn.");
       setEditor({ type: "address" });
       return;
     }
     if (!selected.length) {
-      setError("Select at least one product in your cart.");
+      setError("Vui lòng chọn ít nhất một sản phẩm trong giỏ hàng.");
       return;
     }
     placing.current = true;
@@ -230,11 +233,16 @@ export default function CheckoutPage() {
       status: "demo-placed",
       items: selected.map((line) => ({
         productId: line.productId,
+        itemId: line.product.itemId || line.productId,
+        modelId: line.modelId || null,
         title: line.product.title,
+        image: line.product.image || "",
         variant: line.variant,
         size: line.size,
         quantity: line.quantity,
         price: line.product.price,
+        shopId: line.product.shopId || null,
+        shopName: line.product.shopName || "",
       })),
       shipping: groups.map((group) => ({
         shopId: group.shop.id,
@@ -251,7 +259,7 @@ export default function CheckoutPage() {
     if (!completeCheckout(selected)) {
       placing.current = false;
       setError(
-        "Your cart has changed. Review the selected products before placing your demo order.",
+        "Giỏ hàng của bạn đã thay đổi. Vui lòng kiểm tra lại sản phẩm đã chọn trước khi đặt hàng.",
       );
       return;
     }
@@ -264,7 +272,7 @@ export default function CheckoutPage() {
     // Synchronize multi-shop checkout to Shopee Simulator backend
     const batchPayload = {
       buyer_user_id: getNumericBuyerId(user?.id || 1001),
-      buyer_username: user?.username || "demo",
+      buyer_username: user?.username || user?.name || "demo",
       recipient_name: address.name || "Demo Shopper",
       recipient_phone: address.phone || "0901234567",
       recipient_address: address.street || "Sample Address",
@@ -272,12 +280,14 @@ export default function CheckoutPage() {
       recipient_city: address.city || "Ho Chi Minh City",
       payment_method: payment === "wallet" ? "ShopeePay" : "Cash on Delivery",
       orders: groups.map((group) => {
+        const rawId = group.shop.id;
+        const parsed = Number(rawId);
         const backendShopId =
-          typeof group.shop.id === "number"
-            ? group.shop.id
-            : group.shop.id === "shop-002"
+          !isNaN(parsed) && parsed > 0
+            ? parsed
+            : rawId === "shop-002"
               ? 839910244
-              : 727720655;
+              : 910283751;
         const currentMethod = methodFor(group.shop.id);
         return {
           shop_id: backendShopId,
@@ -285,16 +295,17 @@ export default function CheckoutPage() {
           shipping_carrier:
             currentMethod.carrierName ||
             (currentMethod.id === "express"
-              ? "Express Delivery"
+              ? "Hỏa tốc"
               : "Shopee Xpress"),
+          shipping_fee: currentMethod.fee || 15000,
           message_to_seller: notes[group.shop.id] || "",
           voucher_code: discountStatus.eligible ? appliedVoucher.code : undefined,
           items: group.lines.map((l) => ({
-            item_id:
-              Number(l.product.itemId || l.product.id) > 100
-                ? Number(l.product.itemId || l.product.id)
-                : 10001,
+            item_id: Number(l.product.itemId || l.product.id),
+            model_id: l.modelId ? Number(l.modelId) : (l.product.modelId ? Number(l.product.modelId) : undefined),
             quantity: l.quantity,
+            item_price: l.product.price,
+            item_name: l.product.title,
           })),
         };
       }),
@@ -305,12 +316,19 @@ export default function CheckoutPage() {
       .then((res) => {
         if (res?.orders?.length) {
           const firstSn = res.orders[0].order_sn;
-          setReceipt((prev) =>
-            prev ? { ...prev, id: firstSn, backendOrders: res.orders } : prev,
-          );
+          const updated = {
+            ...order,
+            id: firstSn,
+            orderSn: firstSn,
+            backendOrders: res.orders,
+          };
+          saveMockOrder(updated);
+          setReceipt(updated);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("Backend batch checkout warning:", err);
+      });
   }
   if (receipt)
     return (
@@ -319,74 +337,71 @@ export default function CheckoutPage() {
           <span className={s.successIcon}>
             <CheckCircle2 size={44} strokeWidth={1.4} />
           </span>
-          <span className={s.eyebrow}>A LITTLE MORE EVERYDAY</span>
-          <h2>Demo order placed</h2>
+          <span className={s.eyebrow}>SHOPIZ SIMULATOR</span>
+          <h2>Đặt hàng thành công</h2>
           <p role="status">
-            Your order has been created in this browser. No payment was taken
-            and no order was sent to a seller.
+            Đơn hàng của bạn đã được khởi tạo thành công trên hệ thống mô phỏng.
           </p>
           <strong className={s.orderId}>{receipt.id}</strong>
           <dl>
             <div>
-              <dt>Items</dt>
+              <dt>Số lượng sản phẩm</dt>
               <dd>
                 {receipt.items.reduce((sum, item) => sum + item.quantity, 0)}
               </dd>
             </div>
             <div>
-              <dt>Payment method</dt>
+              <dt>Phương thức thanh toán</dt>
               <dd>
                 {
                   paymentMethods.find((method) => method.id === receipt.payment)
-                    .name
+                    ?.name || receipt.payment
                 }
               </dd>
             </div>
             <div>
-              <dt>Total</dt>
+              <dt>Tổng thanh toán</dt>
               <dd>{money(receipt.total)}</dd>
             </div>
           </dl>
           {!receipt.saved && (
             <p className={s.warning}>
-              Your demo order is available for this visit, but browser storage
-              could not save it.
+              Đơn hàng của bạn chỉ có sẵn trong phiên này do bộ nhớ trình duyệt không thể lưu.
             </p>
           )}
           <div className={s.successActions}>
             <Link className={s.primary} to="/account/purchases">
-              View My Purchases
+              Xem Đơn Mua
               <ArrowRight size={15} />
             </Link>
             <Link className={s.secondary} to="/">
-              Continue shopping
+              Tiếp tục mua sắm
               <ArrowRight size={15} />
             </Link>
             <Link className={s.secondary} to="/cart">
-              View remaining cart
+              Xem lại giỏ hàng
             </Link>
           </div>
         </section>
         {receiptPopup && (
           <CheckoutDialog
-            title="Order placed successfully"
+            title="Đặt hàng thành công"
             onClose={() => setReceiptPopup(false)}
           >
             <div className={`${s.dialogBody} ${s.successDialog}`}>
               <CheckCircle2 size={44} strokeWidth={1.4} />
-              <p>Your demo order is ready to view in My Purchases.</p>
+              <p>Đơn hàng của bạn đã sẵn sàng trong mục Đơn Mua.</p>
               <strong className={s.orderId}>{receipt.id}</strong>
               <p className={s.muted}>
-                Order total: {money(receipt.total)}. No real payment or
-                shipment.
+                Tổng thanh toán: {money(receipt.total)}. Không phát sinh phí thực tế.
               </p>
             </div>
             <footer className={s.dialogFooter}>
               <Link className={s.secondary} to="/">
-                Continue Shopping
+                Tiếp Tục Mua Sắm
               </Link>
               <Link className={s.primary} to="/account/purchases">
-                View My Purchases
+                Xem Đơn Mua
                 <ArrowRight size={15} />
               </Link>
             </footer>
@@ -399,12 +414,12 @@ export default function CheckoutPage() {
       <div className={s.page}>
         <section className={s.empty}>
           <ShoppingBag size={43} strokeWidth={1.3} />
-          <h2>No items selected for checkout</h2>
+          <h2>Chưa có sản phẩm nào được chọn</h2>
           <p>
-            Choose the products you’d like to order from your shopping cart.
+            Vui lòng chọn sản phẩm bạn muốn đặt mua từ giỏ hàng.
           </p>
           <Link className={s.primary} to="/cart">
-            Review your cart
+            Quay lại Giỏ hàng
             <ArrowRight size={15} />
           </Link>
         </section>
@@ -418,7 +433,7 @@ export default function CheckoutPage() {
       >
         <h2 id="delivery-address-heading">
           <MapPin size={18} />
-          Delivery Address
+          Địa Chỉ Nhận Hàng
         </h2>
         <div>
           <strong>
@@ -426,32 +441,30 @@ export default function CheckoutPage() {
             <span>{address.phone}</span>
           </strong>
           <p>{formatAddress(address)}</p>
-          {address.isDefault && <span className={s.defaultBadge}>Default</span>}
+          {address.isDefault && <span className={s.defaultBadge}>Mặc định</span>}
           <button onClick={() => setEditor({ type: "address" })}>
-            Change address
+            Thay đổi
           </button>
         </div>
       </section>
       {storageError && (
         <p className={s.warning} role="status">
-          Browser storage is unavailable. Your cart and demo order may only be
-          available for this visit.
+          Bộ nhớ trình duyệt tạm thời không khả dụng.
         </p>
       )}
       <div className={s.productHeader}>
-        <h2>Products Ordered</h2>
-        <span>Unit Price</span>
-        <span>Quantity</span>
-        <span>Item Subtotal</span>
+        <h2>Sản phẩm</h2>
+        <span>Đơn giá</span>
+        <span>Số lượng</span>
+        <span>Thành tiền</span>
       </div>
       {groups.map((group) => {
         const method = methodFor(group.shop.id);
-        const groupSubtotal =
-          group.lines.reduce(
-            (sum, line) =>
-              sum + Math.round(line.product.price * 100) * line.quantity,
-            0,
-          ) / 100;
+        const groupSubtotal = group.lines.reduce(
+          (sum, line) =>
+            sum + Math.round(Number(line.product.price) || 0) * line.quantity,
+          0,
+        );
         const quantity = group.lines.reduce(
           (sum, line) => sum + line.quantity,
           0,
@@ -469,7 +482,7 @@ export default function CheckoutPage() {
                 onClick={() => setEditor({ type: "chat", shop: group.shop })}
               >
                 <MessageCircle size={13} />
-                Chat Now
+                Chat Ngay
               </button>
             </div>
             {group.lines.map((line) => (
@@ -486,7 +499,7 @@ export default function CheckoutPage() {
                     {line.product.title}
                   </Link>
                   <span>
-                    Variation: {line.variant}
+                    Phân loại: {line.variant}
                     {line.size ? ` · ${line.size}` : ""}
                   </span>
                 </div>
@@ -501,19 +514,19 @@ export default function CheckoutPage() {
             <div className={s.shopVoucher}>
               <span>
                 <Ticket size={15} />
-                Shopiz offers
+                Voucher của Shop
               </span>
               <button onClick={() => setVoucherOpen(true)}>
-                Select voucher
+                Chọn Voucher
                 <ChevronRight size={12} />
               </button>
             </div>
             <div className={s.fulfillment}>
               <label className={s.sellerNote}>
-                Message:
+                Lời nhắn:
                 <input
                   aria-label={`Message to ${group.shop.name}`}
-                  placeholder="Leave a note for the seller"
+                  placeholder="Lưu ý cho người bán..."
                   maxLength={200}
                   value={notes[group.shop.id] || ""}
                   onChange={(e) =>
@@ -525,7 +538,7 @@ export default function CheckoutPage() {
                 <div>
                   <span>
                     <Truck size={15} />
-                    Shipping option:
+                    Phương thức vận chuyển:
                   </span>
                   <strong>{method.name}</strong>
                   <button
@@ -535,21 +548,20 @@ export default function CheckoutPage() {
                       setEditor({ type: "shipping", shop: group.shop });
                     }}
                   >
-                    Change
+                    Thay đổi
                   </button>
                   <span>{money(method.fee)}</span>
                 </div>
-                <p>Estimated delivery: {method.estimate}</p>
+                <p>Thời gian nhận hàng: {method.estimate}</p>
                 <small>
                   <PackageCheck size={12} />
-                  Inspect your parcel on delivery · Demo shipping benefit
+                  Đồng kiểm khi nhận hàng · Tiêu chuẩn Shopee
                 </small>
               </div>
             </div>
             <div className={s.shopTotal}>
               <span>
-                Shop total ({quantity} {quantity === 1 ? "item" : "items"},
-                including delivery):
+                Tổng số tiền ({quantity} sản phẩm, đã gồm phí vận chuyển):
               </span>
               <strong>{money(groupSubtotal + method.fee)}</strong>
             </div>
@@ -564,7 +576,7 @@ export default function CheckoutPage() {
           </h2>
           <div className={s.voucherActions}>
             <button onClick={() => setVoucherOpen(true)}>
-              {appliedVoucher ? appliedVoucher.code : "Select voucher"}
+              {appliedVoucher ? appliedVoucher.code : "Chọn hoặc nhập mã"}
               <ChevronRight size={12} />
             </button>
             {appliedVoucher && (
@@ -580,14 +592,14 @@ export default function CheckoutPage() {
         {appliedVoucher && (
           <p className={s.voucherNote}>
             {discountStatus.eligible
-              ? discountStatus.reason || `Voucher savings: ${money(discount)}`
+              ? discountStatus.reason || `Voucher giảm: ${money(discount)}`
               : discountStatus.reason}
           </p>
         )}
         <div className={s.coins}>
           <span>
             <Coins size={17} />
-            Shopiz Coins<small>Coins are not available yet</small>
+            Shopee Xu<small>Chưa có xu khả dụng</small>
           </span>
           <label>
             −{money(0)}
@@ -597,9 +609,9 @@ export default function CheckoutPage() {
       </section>
       <section className={s.paymentBlock}>
         <div className={s.paymentHeading}>
-          <h2>Payment Method</h2>
+          <h2>Phương thức thanh toán</h2>
           <span>
-            {paymentMethods.find((method) => method.id === payment).name}
+            {paymentMethods.find((method) => method.id === payment)?.name || payment}
           </span>
           <button
             onClick={() => {
@@ -607,24 +619,24 @@ export default function CheckoutPage() {
               setEditor({ type: "payment" });
             }}
           >
-            Change payment
+            Thay đổi
           </button>
         </div>
         <dl className={s.totals}>
           <div>
-            <dt>Merchandise Subtotal</dt>
+            <dt>Tổng tiền hàng</dt>
             <dd data-testid="checkout-subtotal">{money(subtotal)}</dd>
           </div>
           <div>
-            <dt>Shipping Total</dt>
+            <dt>Tổng cộng tiền phí vận chuyển</dt>
             <dd data-testid="checkout-shipping">{money(shippingFee)}</dd>
           </div>
           <div>
-            <dt>Voucher Discount</dt>
+            <dt>Giảm giá từ Voucher</dt>
             <dd data-testid="checkout-discount">−{money(discount)}</dd>
           </div>
           <div className={s.grandTotal}>
-            <dt>Total Payment</dt>
+            <dt>Tổng thanh toán</dt>
             <dd data-testid="checkout-total" aria-live="polite">
               {money(total)}
             </dd>
@@ -633,12 +645,12 @@ export default function CheckoutPage() {
         <div className={s.placeOrder}>
           <div>
             <p>
-              By placing a demo order, you agree to Shopiz’s{" "}
-              <Link to="/info/terms-of-service">Terms of Service</Link>.
+              Nhấn &ldquo;Đặt Hàng&rdquo; đồng nghĩa với việc bạn đồng ý tuân theo{" "}
+              <Link to="/info/terms-of-service">Điều khoản Shopiz</Link>.
             </p>
             <small>
               <ShieldCheck size={13} />
-              Simulation only. No real payment, shipment or seller notification.
+              Mô phỏng Shopee Open API v2. Đơn hàng được cập nhật thời gian thực.
             </small>
             {error && (
               <p className={s.fieldError} role="alert">
@@ -647,7 +659,7 @@ export default function CheckoutPage() {
             )}
           </div>
           <button className={s.primary} onClick={placeOrder}>
-            Place demo order
+            Đặt Hàng
           </button>
         </div>
       </section>

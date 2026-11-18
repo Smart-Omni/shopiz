@@ -3,18 +3,18 @@ import { products } from "./catalog";
 export const orderStorageKey = "shopiz-demo-orders-v1";
 let visitOrders = [];
 export const orderTabs = [
-  ["all", "All"],
-  ["to-pay", "To Pay"],
-  ["to-ship", "To Ship"],
-  ["to-receive", "To Receive"],
-  ["completed", "Completed"],
-  ["cancelled", "Cancelled"],
-  ["returns", "Returns / Refunds"],
+  ["all", "Tất cả"],
+  ["to-pay", "Chờ thanh toán"],
+  ["to-ship", "Vận chuyển"],
+  ["to-receive", "Chờ giao hàng"],
+  ["completed", "Hoàn thành"],
+  ["cancelled", "Đã hủy"],
+  ["returns", "Trả hàng/Hoàn tiền"],
 ];
 export const orderStatus = (order) =>
   order.status === "demo-placed" ? "to-ship" : order.status;
 export const statusLabel = (order) =>
-  orderTabs.find(([id]) => id === orderStatus(order))?.[1] || "Processing";
+  orderTabs.find(([id]) => id === orderStatus(order))?.[1] || "Đang xử lý";
 function validOrder(order) {
   return (
     order &&
@@ -27,16 +27,13 @@ function validOrder(order) {
       (item) =>
         item &&
         typeof item.title === "string" &&
-        typeof item.variant === "string" &&
-        typeof item.size === "string" &&
-        products.some((product) => product.id === item.productId) &&
         Number.isInteger(item.quantity) &&
         item.quantity > 0 &&
-        Number.isFinite(item.price) &&
-        item.price >= 0,
+        Number.isFinite(Number(item.price)) &&
+        Number(item.price) >= 0,
     ) &&
     ["subtotal", "shippingFee", "discount", "total"].every(
-      (key) => Number.isFinite(order[key]) && order[key] >= 0,
+      (key) => Number.isFinite(Number(order[key])) && Number(order[key]) >= 0,
     )
   );
 }

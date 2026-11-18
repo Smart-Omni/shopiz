@@ -183,11 +183,11 @@ export function SearchBar({ compact = false }) {
             "Home & Living",
             "Sneakers",
             "Skincare",
-            "Under $20",
+            "Dưới 200.000₫",
           ].map((x) => (
             <Link
               key={x}
-              to={`/search?q=${encodeURIComponent(x === "Under $20" ? "" : x)}${x === "Under $20" ? "&max=20" : ""}`}
+              to={`/search?q=${encodeURIComponent(x === "Dưới 200.000₫" ? "" : x)}${x === "Dưới 200.000₫" ? "&max=200000" : ""}`}
             >
               {x}
             </Link>

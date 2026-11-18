@@ -3,32 +3,39 @@ export {
   validateAddress,
   formatAddress,
 } from "../../data/addresses";
+
 export const shippingMethods = [
   {
     id: "standard",
-    name: "Standard delivery",
-    fee: 0,
-    estimate: "3–5 business days",
+    name: "Nhanh (Tiêu chuẩn)",
+    fee: 15000,
+    estimate: "1–3 ngày làm việc",
+    carrierName: "Shopee Xpress",
+    channelId: 30001,
   },
   {
     id: "express",
-    name: "Express delivery",
-    fee: 2.9,
-    estimate: "1–2 business days",
+    name: "Hỏa tốc",
+    fee: 35000,
+    estimate: "Giao trong ngày",
+    carrierName: "Express Delivery",
+    channelId: 30002,
   },
 ];
+
 export const paymentMethods = [
   {
     id: "cod",
-    name: "Cash on delivery",
+    name: "Thanh toán khi nhận hàng (COD)",
     description:
-      "Pay on delivery in the simulated flow. No payment is collected.",
+      "Thanh toán bằng tiền mặt khi nhận hàng trong mô phỏng Shopee.",
   },
   {
     id: "wallet",
-    name: "Demo wallet",
+    name: "Ví ShopeePay",
     description:
-      "A simulated wallet selection. No real balance or funds are used.",
+      "Thanh toán trực tiếp qua số dư ví ShopeePay mô phỏng.",
   },
 ];
+
 export { saveMockOrder } from "../../data/orders";
