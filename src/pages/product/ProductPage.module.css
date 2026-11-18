@@ -72,7 +72,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(1);
 }
 .imageLabel {
   position: absolute;
@@ -103,7 +102,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(1);
 }
 .thumbnails > .activeThumb {
   border: 2px solid #111;
@@ -637,7 +635,6 @@
   width: 74px;
   height: 74px;
   object-fit: cover;
-  filter: grayscale(1);
   margin: 12px 0;
 }
 .sellerResponse {
@@ -747,7 +744,6 @@
   width: 85px;
   height: 85px;
   object-fit: cover;
-  filter: grayscale(1);
   flex-shrink: 0;
 }
 .orderItem h3 {

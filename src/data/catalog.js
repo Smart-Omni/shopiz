@@ -1,8 +1,40 @@
 export const image = (id, width = 500) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=85`;
 
-// Categories are dynamically populated from Shopee Simulator backend via CatalogProvider
-export const categories = [];
+// Official 28 Level 1 Shopee root categories (all Vietnamese labels)
+export const OFFICIAL_LEVEL_1_CATEGORIES = [
+  "Thời Trang Nam",
+  "Thời Trang Nữ",
+  "Điện Thoại & Phụ Kiện",
+  "Máy Tính & Laptop",
+  "Thiết Bị Âm Thanh",
+  "Thiết Bị Điện Tử & Công Nghệ",
+  "Thiết Bị Điện Gia Dụng",
+  "Nhà Cửa & Đời Sống",
+  "Sức Khỏe",
+  "Sắc Đẹp",
+  "Giày Dép Nam",
+  "Giày Dép Nữ",
+  "Túi Ví Nam",
+  "Túi Ví Nữ",
+  "Phụ Kiện Thời Trang",
+  "Đồng Hồ",
+  "Mẹ & Bé",
+  "Thời Trang Trẻ Em",
+  "Bách Hóa Online & Thực Phẩm",
+  "Thể Thao & Dã Ngoại",
+  "Du Lịch & Hành Lý",
+  "Chăm Sóc Thú Cưng",
+  "Máy Ảnh & Flycam",
+  "Gaming & Console",
+  "Văn Phòng Phẩm",
+  "Sở Thích & Sưu Tầm",
+  "Ô Tô & Xe Máy",
+  "Sách & Tạp Chí",
+];
+
+// Categories are dynamically populated with Level 1 root categories via CatalogProvider
+export const categories = [...OFFICIAL_LEVEL_1_CATEGORIES];
 
 // Products are dynamically populated from Shopee Simulator backend via CatalogProvider
 export const mockProducts = [];

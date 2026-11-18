@@ -144,7 +144,6 @@
   width: 76px;
   height: 90px;
   object-fit: cover;
-  filter: grayscale(1);
 }
 .product > div {
   min-width: 0;

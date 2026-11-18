@@ -80,10 +80,16 @@ export function CatalogProvider({ children }) {
       }
 
       if (catRes.status === "fulfilled" && catRes.value?.length) {
-        const serverCatNames = catRes.value.map((c) => c.category_name);
-        const itemCatNames = liveItems.map((p) => p.category);
+        // Filter strictly for Level 1 root categories (parent_category_id === 0 or null)
+        // Child subcategories (Level 2 & 3) must NOT be shown on customer front page category grid
+        const serverLevel1 = catRes.value
+          .filter((c) => !c.parent_category_id || Number(c.parent_category_id) === 0)
+          .map((c) => c.category_name?.trim())
+          .filter(Boolean);
+
+        // Deduplicate and merge server root categories with official Level 1 categories
         const uniqueCategories = [
-          ...new Set([...serverCatNames, ...itemCatNames].filter(Boolean)),
+          ...new Set([...serverLevel1, ...initialCategories]),
         ];
 
         setCategories(uniqueCategories);
