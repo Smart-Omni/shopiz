@@ -188,11 +188,38 @@ export default function AddProductPage({ shopId, itemId, onCancel, onSaved }) {
       return;
     }
     if (file.size > VIDEO_MAX_BYTES) {
-      setNotice("Dung lượng video tối đa là 50 MB.");
+      setNotice("Dung lượng video vượt quá 50 MB (tối đa 50 MB theo tiêu chuẩn Shopee). Vui lòng chọn video khác.");
       return;
     }
     setUploading(true);
     setNotice("");
+
+    // Validate video duration <= 60s (Shopee standard: 10s-60s)
+    try {
+      const duration = await new Promise((resolve, reject) => {
+        const videoElement = document.createElement("video");
+        videoElement.preload = "metadata";
+        const url = URL.createObjectURL(file);
+        videoElement.onloadedmetadata = () => {
+          URL.revokeObjectURL(url);
+          resolve(videoElement.duration);
+        };
+        videoElement.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("Không thể đọc định dạng video."));
+        };
+        videoElement.src = url;
+      });
+
+      if (duration > 60) {
+        setNotice(`Thời lượng video (${Math.round(duration)}s) vượt quá giới hạn 60 giây theo tiêu chuẩn Shopee.`);
+        setUploading(false);
+        return;
+      }
+    } catch (durationErr) {
+      console.warn("[uploadVideo] Could not verify duration, proceeding with upload:", durationErr);
+    }
+
     try {
       const media = await mediaService.uploadMedia(file);
       update("videoUrl", media.url);

@@ -51,7 +51,10 @@ export const orderService = {
   async requestReturn(formDataOrPayload) {
     const isFormData = formDataOrPayload instanceof FormData;
     const config = isFormData
-      ? { headers: { "Content-Type": "multipart/form-data" } }
+      ? {
+          headers: { "Content-Type": "multipart/form-data" },
+          timeout: 120000, // 2 minutes for return photo evidence uploads
+        }
       : {};
     const data = await api.post(
       "/simulator/returns/buyer_request",
