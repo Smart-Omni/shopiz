@@ -164,6 +164,9 @@ export function mapBackendProduct(item) {
     tierVariation: item.tier_variation,
     models: item.models || [],
     description: item.description || "",
+    sku: item.item_sku || item.sku || null,
+    brand: item.brand || item.seller?.shop_name || "Shopiz Select",
+    condition: item.product_condition === "NEW" ? "Mới" : (item.product_condition || "Mới"),
     comments: rawComments,
     reviews: item.reviews || null,
     seller: {

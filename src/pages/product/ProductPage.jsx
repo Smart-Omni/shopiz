@@ -234,7 +234,7 @@ function ProductDetail({ product: p }) {
         </div>
       )}
       <nav className={s.breadcrumb} aria-label="Breadcrumb">
-        <Link to="/">Home</Link>
+        <Link to="/">Trang chủ</Link>
         <ChevronRight size={12} />
         <Link to={`/category/${encodeURIComponent(catTitle)}`}>
           {catTitle}
@@ -262,36 +262,36 @@ function ProductDetail({ product: p }) {
               <Stars rating={Number(p.rating) || 5.0} />
             </a>
             <a href="#product-reviews">
-              <strong>{p.ratingCount ?? (details.reviews || []).length}</strong>Ratings
+              <strong>{p.ratingCount ?? (details.reviews || []).length}</strong> Đánh giá
             </a>
             <span>
-              <strong>{(p.sold ?? 0).toLocaleString()}</strong>Sold
+              <strong>{(p.sold ?? 0).toLocaleString()}</strong> Đã bán
             </span>
           </div>
           <div className={s.pricePanel}>
             <div>
               <del>{money(currentOriginal)}</del>
               <strong>{money(currentPrice)}</strong>
-              {p.discount ? <span>{p.discount}% OFF</span> : null}
+              {p.discount ? <span>GIẢM {p.discount}%</span> : null}
             </div>
             <p>
               <ShieldCheck size={14} />
-              Everyday value, selected for you.
+              Chính hãng 100% · Giao hàng nhanh toàn quốc
             </p>
           </div>
           <dl className={s.purchaseRows}>
             <div>
-              <dt>Shop offers</dt>
+              <dt>Mã giảm giá</dt>
               <dd>
                 <Link className={s.voucher} to="/vouchers">
                   <Ticket size={14} />
-                  Explore vouchers
+                  Xem tất cả voucher
                   <ChevronRight size={12} />
                 </Link>
               </dd>
             </div>
             <div>
-              <dt>Delivery</dt>
+              <dt>Vận chuyển</dt>
               <dd>
                 <span className={s.deliveryLine}>
                   <Truck size={17} />
@@ -432,27 +432,27 @@ function ProductDetail({ product: p }) {
                     <Plus size={13} />
                   </button>
                 </div>
-                <span>{currentStock} pieces available</span>
+                <span>{currentStock} sản phẩm có sẵn</span>
               </dd>
             </div>
           </dl>
           <div className={s.buyActions}>
             <button className={s.addToCart} onClick={addToCart}>
               <ShoppingCart size={19} />
-              Add to Cart
+              Thêm Vào Giỏ Hàng
             </button>
             <button className={s.buyNow} onClick={showPreview}>
-              Buy Now
+              Mua Ngay
             </button>
           </div>
           <div className={s.assurance}>
             <ShieldCheck size={21} />
             <span>
-              <strong>Shopiz Guarantee</strong>
-              <small>A little more confidence in every find.</small>
+              <strong>Shopiz Đảm Bảo</strong>
+              <small>Đảm bảo quyền lợi khách hàng trong mọi đơn hàng.</small>
             </span>
             <Link to="/help">
-              Learn more
+              Tìm hiểu thêm
               <ChevronRight size={12} />
             </Link>
           </div>
@@ -473,27 +473,27 @@ function ProductDetail({ product: p }) {
           </span>
           <div>
             <h2>{details.seller?.name || p.shopName || "Official Store"}</h2>
-            <p>Online recently</p>
+            <p>Vừa mới truy cập</p>
             <div>
               <button onClick={() => setChatOpen(true)}>
                 <MessageCircle size={13} />
-                Chat Now
+                Chat Ngay
               </button>
               <Link to={`/shop/${details.seller?.id || p.shopId || "shop-001"}`}>
                 <Store size={13} />
-                View Shop
+                Xem Shop
               </Link>
             </div>
           </div>
         </div>
         <dl className={s.sellerStats}>
           {[
-            ["Ratings", details.seller?.rating || "4.9"],
-            ["Products", details.seller?.products || 24],
-            ["Response rate", details.seller?.responseRate || details.seller?.response_rate || "98%"],
-            ["Response time", details.seller?.responseTime || "Within a few hours"],
-            ["Joined", details.seller?.joined || "2 years ago"],
-            ["Followers", details.seller?.followers || "15.4k"],
+            ["Đánh giá", details.seller?.rating || "4.9"],
+            ["Sản phẩm", details.seller?.products || 24],
+            ["Tỉ lệ phản hồi", details.seller?.responseRate || details.seller?.response_rate || "98%"],
+            ["Thời gian phản hồi", details.seller?.responseTime || "Trong vài giờ"],
+            ["Tham gia", details.seller?.joined || "2 năm trước"],
+            ["Người theo dõi", details.seller?.followers || "15.4k"],
           ].map(([label, value]) => (
             <div key={label}>
               <dt>{label}</dt>
@@ -503,21 +503,20 @@ function ProductDetail({ product: p }) {
         </dl>
       </section>
       <section className={s.section}>
-        <h2 className={s.sectionTitle}>PRODUCT SPECIFICATIONS</h2>
+        <h2 className={s.sectionTitle}>CHI TIẾT SẢN PHẨM</h2>
         <dl className={s.specs}>
           {[
-            ["Category", catTitle],
-            ["Brand", details.brand || "Shopiz Select"],
-            ["SKU", details.sku || "SZ-0001"],
-            ["Material", details.material || "High Quality Material"],
-            ["Condition", "New"],
-            ["Stock", `${currentStock} pieces`],
-            ["Ships from", p.location || "Ho Chi Minh City"],
+            ["Danh Mục", catTitle],
+            ["Thương hiệu", p.brand || p.shopName || details.brand || "Shopiz Select"],
+            ["Mã SKU", p.sku || details.sku || `SZ-${p.id}`],
+            ["Tình trạng", p.condition || "Mới"],
+            ["Kho hàng", `${currentStock} sản phẩm`],
+            ["Gửi từ", p.location || "TP. Hồ Chí Minh"],
           ].map(([label, value]) => (
             <div key={label}>
               <dt>{label}</dt>
               <dd>
-                {label === "Category" ? (
+                {label === "Danh Mục" ? (
                   <Link to={`/category/${encodeURIComponent(value)}`}>
                     {value}
                     <ChevronRight size={11} />
@@ -529,44 +528,27 @@ function ProductDetail({ product: p }) {
             </div>
           ))}
         </dl>
-        <h2 className={s.sectionTitle}>PRODUCT DESCRIPTION</h2>
+        <h2 className={s.sectionTitle}>MÔ TẢ SẢN PHẨM</h2>
         <div className={s.description}>
-          <h3>{p.title}</h3>
-          <p>
-            Meet your next everyday favorite. Part of the {details.brand}{" "}
-            collection, this find brings simple design and practical details
-            into your daily routine.
-          </p>
-          <h4>A little more in the details</h4>
-          <ul>
-            {(details.highlights || []).map((text) => (
-              <li key={text}>{text}</li>
-            ))}
-          </ul>
-          <h4>What’s included</h4>
-          <p>
-            1 × {(p.title || "").split(" · ")[0]}. Select your preferred{" "}
-            {(details.option || "style").toLowerCase()}
-            {details.sizes?.length ? " and size" : ""} before reviewing your
-            order.
-          </p>
-          <p className={s.demoNote}>
-            This is a sample product listing. Specifications, stock and reviews
-            are demonstration data. Gallery detail images are crops of the main
-            product photo.
-          </p>
+          {p.description ? (
+            <div style={{ whiteSpace: "pre-line", wordBreak: "break-word" }}>
+              {p.description}
+            </div>
+          ) : (
+            <p>Chưa có mô tả chi tiết cho sản phẩm này.</p>
+          )}
         </div>
       </section>
       <ProductReviews product={p} reviews={details.reviews || []} />
       <ProductGrid
         items={related}
-        title="MORE FROM THIS COLLECTION"
-        subtitle="Find something that goes together"
+        title="SẢN PHẨM CÙNG SHOP"
+        subtitle="Khám phá các sản phẩm liên quan"
         loadMore={false}
       />
       <ProductGrid
         items={products.filter((x) => String(x.id) !== String(p.id)).slice(-6)}
-        title="YOU MAY ALSO LIKE"
+        title="CÓ THỂ BẠN CŨNG THÍCH"
         loadMore={false}
       />
       <dialog
