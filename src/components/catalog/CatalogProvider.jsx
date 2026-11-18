@@ -26,9 +26,51 @@ export function CatalogProvider({ children }) {
 
       let liveItems = [];
       if (prodRes.status === "fulfilled" && prodRes.value?.products?.length) {
-        liveItems = prodRes.value.products
-          .filter((item) => item.item_status !== "SELLER_DELETE")
-          .map(mapBackendProduct);
+        const rawProducts = prodRes.value.products.filter(
+          (item) => item.item_status !== "SELLER_DELETE",
+        );
+
+        // Fetch extra_info for all items to guarantee live metrics (sales, rating, views, likes)
+        const shopGroups = {};
+        for (const p of rawProducts) {
+          const sid = p.shop_id || p.shopId;
+          if (sid) {
+            shopGroups[sid] = shopGroups[sid] || [];
+            shopGroups[sid].push(p.item_id);
+          }
+        }
+
+        let extraMap = {};
+        try {
+          const extraPromises = Object.entries(shopGroups).map(([sid, ids]) =>
+            catalogService.getItemExtraInfo(sid, ids).catch(() => []),
+          );
+          const extraResults = await Promise.all(extraPromises);
+          for (const list of extraResults) {
+            for (const m of list) {
+              extraMap[String(m.item_id)] = m;
+            }
+          }
+        } catch {
+          extraMap = {};
+        }
+
+        liveItems = rawProducts.map((p) => {
+          const extra = extraMap[String(p.item_id)];
+          const enriched = extra
+            ? {
+                ...p,
+                sales: extra.sale,
+                sale: extra.sale,
+                sold: extra.sale,
+                rating_star: extra.rating_star,
+                comment_count: extra.comment_count,
+                views: extra.views,
+                likes: extra.likes,
+              }
+            : p;
+          return mapBackendProduct(enriched);
+        });
       }
 
       if (liveItems.length) {

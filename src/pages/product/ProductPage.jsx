@@ -262,7 +262,7 @@ function ProductDetail({ product: p }) {
               <Stars rating={Number(p.rating) || 5.0} />
             </a>
             <a href="#product-reviews">
-              <strong>{(details.reviews || []).length}</strong>Ratings
+              <strong>{p.ratingCount ?? (details.reviews || []).length}</strong>Ratings
             </a>
             <span>
               <strong>{(p.sold ?? 0).toLocaleString()}</strong>Sold
@@ -653,9 +653,28 @@ export default function ProductPage() {
 
     catalogService
       .getProductDetail(id)
-      .then((detail) => {
+      .then(async (detail) => {
         if (isMounted && detail) {
-          const mapped = mapBackendProduct(detail);
+          let enriched = detail;
+          const sid = detail.shop_id || detail.seller?.shop_id;
+          if (sid) {
+            try {
+              const extraList = await catalogService.getItemExtraInfo(sid, [id]);
+              if (extraList?.[0]) {
+                enriched = {
+                  ...detail,
+                  sales: extraList[0].sale,
+                  sale: extraList[0].sale,
+                  sold: extraList[0].sale,
+                  rating_star: extraList[0].rating_star,
+                  comment_count: extraList[0].comment_count,
+                  views: extraList[0].views,
+                  likes: extraList[0].likes,
+                };
+              }
+            } catch {}
+          }
+          const mapped = mapBackendProduct(enriched);
           setProduct(mapped);
           if (lastVisited.current !== String(id)) {
             lastVisited.current = String(id);

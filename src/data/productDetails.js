@@ -183,6 +183,8 @@ export function getProductDetails(product) {
         ? product.reviews.items
         : null;
 
+  const isBackendItem = Boolean(product?.itemId || product?.shopId || product?.seller?.id);
+
   const reviews = commentsList
     ? commentsList.map((c, i) => ({
         id: c.comment_id || i + 1,
@@ -198,7 +200,9 @@ export function getProductDetails(product) {
         hasPhoto: Boolean(c.images?.length),
         response: c.reply || null,
       }))
-    : defaultReviews;
+    : isBackendItem
+      ? []
+      : defaultReviews;
 
   const seller =
     product?.seller?.shop_name || product?.seller?.name

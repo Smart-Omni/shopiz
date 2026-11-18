@@ -114,6 +114,30 @@ export function mapBackendProduct(item) {
         ? item.reviews.items
         : [];
 
+  const ratingStar =
+    item.rating_star !== undefined && item.rating_star !== null
+      ? Number(item.rating_star)
+      : item.reviews?.average_rating !== undefined && item.reviews?.average_rating !== null
+        ? Number(item.reviews.average_rating)
+        : item.rating !== undefined && item.rating !== null
+          ? Number(item.rating)
+          : null;
+
+  const commentCount = Number(
+    item.comment_count ?? item.reviews?.rating_count ?? (Array.isArray(item.comments) ? item.comments.length : 0),
+  );
+
+  const displayRating =
+    ratingStar !== null
+      ? ratingStar > 0
+        ? ratingStar.toFixed(1)
+        : commentCount > 0
+          ? "0.0"
+          : "5.0"
+      : "5.0";
+
+  const soldCount = Number(item.sales ?? item.sale ?? item.sold ?? 0);
+
   return {
     id: String(item.item_id),
     itemId: item.item_id,
@@ -126,18 +150,13 @@ export function mapBackendProduct(item) {
     categoryId,
     stock,
     discount,
-    rating: item.shop_rating
-      ? String(item.shop_rating)
-      : item.rating
-        ? String(item.rating)
-        : item.reviews?.average_rating
-          ? String(item.reviews.average_rating)
-          : "4.9",
-    sold: Number(item.sales || item.sold || 48),
+    rating: displayRating,
+    ratingCount: commentCount,
+    sold: soldCount,
     location: item.location || "Ho Chi Minh City",
     progress: Math.min(
       100,
-      Math.max(25, ((Number(item.sales || 20) * 3) % 85) + 15),
+      Math.max(10, Math.min(100, (soldCount * 5) || 25)),
     ),
     mall: Boolean(item.is_official_shop || item.shop_name?.includes("Official")),
     shopId: item.shop_id || item.seller?.shop_id,
