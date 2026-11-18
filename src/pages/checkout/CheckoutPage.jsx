@@ -114,31 +114,22 @@ export default function CheckoutPage() {
   useEffect(() => {
     let active = true;
     groups.forEach((group) => {
-      const hasBackendProduct = group.lines.some(
-        (l) =>
-          l.product.itemId ||
-          Number(l.product.id) > 20 ||
-          Number(l.product.price) >= 1000,
-      );
-      if (!hasBackendProduct) return;
-
+      const rawId = group.shop.id;
+      const parsedId = Number(rawId);
       const backendShopId =
-        typeof group.shop.id === "number"
-          ? group.shop.id
-          : group.shop.id === "shop-002"
+        !isNaN(parsedId) && parsedId > 0
+          ? parsedId
+          : rawId === "shop-002"
             ? 839910244
-            : 727720655;
+            : 910283751;
 
       catalogService
         .calculateShippingFee({
           shopId: backendShopId,
           recipientCity: address?.city || "Ho Chi Minh City",
           items: group.lines.map((l) => ({
-            item_id:
-              Number(l.product.itemId || l.product.id) > 100
-                ? Number(l.product.itemId || l.product.id)
-                : 10001,
-            item_price: l.product.price,
+            item_id: Number(l.product.itemId || l.product.id),
+            item_price: Number(l.product.price) || 0,
             quantity: l.quantity,
           })),
         })
@@ -148,27 +139,46 @@ export default function CheckoutPage() {
           if (channels.length > 0) {
             const formatted = channels
               .filter((c) => c.enabled !== false)
-              .map((c) => ({
-                id: String(
-                  c.channel_id ||
-                    c.channelId ||
-                    c.carrier_name.toLowerCase().replace(/\s+/g, "-"),
-                ),
-                name: c.carrier_name || c.service_type,
-                fee:
-                  c.buyer_paid_fee !== undefined
-                    ? c.buyer_paid_fee
-                    : c.actual_fee,
-                estimate:
-                  c.estimated_days || `${c.service_type || "Standard"} delivery`,
-                carrierName: c.carrier_name,
-                channelId: c.channel_id,
-              }));
+              .map((c) => {
+                const buyerFee =
+                  c.buyer_paid_shipping_fee !== undefined && c.buyer_paid_shipping_fee !== null
+                    ? Number(c.buyer_paid_shipping_fee)
+                    : c.buyerPaidShippingFee !== undefined && c.buyerPaidShippingFee !== null
+                      ? Number(c.buyerPaidShippingFee)
+                      : c.actual_shipping_fee !== undefined && c.actual_shipping_fee !== null
+                        ? Number(c.actual_shipping_fee)
+                        : c.actualShippingFee !== undefined && c.actualShippingFee !== null
+                          ? Number(c.actualShippingFee)
+                          : 15000;
+                return {
+                  id: String(
+                    c.channel_id ||
+                      c.channelId ||
+                      c.carrier_name?.toLowerCase().replace(/\s+/g, "-") ||
+                      "standard",
+                  ),
+                  name: c.carrier_name || c.channel_name || c.channelName || c.service_type || "Nhanh (Tiêu chuẩn)",
+                  fee: buyerFee,
+                  estimate:
+                    c.estimated_delivery_days ||
+                    c.estimatedDeliveryDays ||
+                    c.estimated_days ||
+                    "1–3 ngày",
+                  carrierName: c.carrier_name || c.channel_name || c.channelName || "Shopee Xpress",
+                  channelId: Number(c.channel_id || c.channelId || 30001),
+                };
+              });
             if (formatted.length > 0) {
               setShopShippingMethods((prev) => ({
                 ...prev,
                 [group.shop.id]: formatted,
               }));
+              setShipping((prev) => {
+                if (!prev[group.shop.id]) {
+                  return { ...prev, [group.shop.id]: formatted[0].id };
+                }
+                return prev;
+              });
             }
           }
         })
@@ -316,10 +326,20 @@ export default function CheckoutPage() {
       .then((res) => {
         if (res?.orders?.length) {
           const firstSn = res.orders[0].order_sn;
+          const backendTotal = res.orders.reduce(
+            (sum, o) => sum + Number(o.total_amount || 0),
+            0,
+          );
+          const backendShipping = res.orders.reduce(
+            (sum, o) => sum + Number(o.buyer_paid_shipping_fee || 0),
+            0,
+          );
           const updated = {
             ...order,
             id: firstSn,
             orderSn: firstSn,
+            total: backendTotal > 0 ? backendTotal : order.total,
+            shippingFee: backendShipping > 0 ? backendShipping : order.shippingFee,
             backendOrders: res.orders,
           };
           saveMockOrder(updated);

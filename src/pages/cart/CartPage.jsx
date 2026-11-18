@@ -75,7 +75,7 @@ function CartRow({ line, max }) {
             {line.product.title}
           </Link>
           <small>
-            <Truck size={11} /> Miễn phí vận chuyển
+            <Truck size={11} /> Vận chuyển nhanh toàn quốc
           </small>
         </div>
       </div>
@@ -277,9 +277,9 @@ export default function CartPage() {
                 </div>
                 <div className={s.shippingNote}>
                   <Truck size={16} />
-                  <span>Free standard delivery on these selected finds.</span>
+                  <span>Phí vận chuyển chính xác sẽ được tính tại trang Thanh toán</span>
                   <Link to="/help">
-                    Learn more
+                    Tìm hiểu thêm
                     <ChevronRight size={12} />
                   </Link>
                 </div>
@@ -364,7 +364,7 @@ export default function CartPage() {
                     <strong data-testid="cart-total">{money(total)}</strong>
                   </div>
                   <small>
-                    Tiết kiệm {money(savings + voucherDiscount)} · Miễn phí vận chuyển
+                    Tiết kiệm {money(savings + voucherDiscount)} · Phí vận chuyển tính khi thanh toán
                   </small>
                 </div>
                 <button

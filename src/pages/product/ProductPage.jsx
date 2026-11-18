@@ -167,17 +167,17 @@ function ProductDetail({ product: p }) {
       (c) => String(c.channel_id || c.channelId) === String(delivery),
     ) || shippingChannels[0];
 
-  const shippingFee = isMockItem
-    ? delivery === "express"
-      ? 2.9
-      : 0
-    : activeChannel
-      ? Number(
-          activeChannel.buyer_paid_shipping_fee ??
-            activeChannel.buyerPaidShippingFee ??
-            0,
-        )
-      : 0;
+  const shippingFee = activeChannel
+    ? Number(
+        activeChannel.buyer_paid_shipping_fee ??
+          activeChannel.buyerPaidShippingFee ??
+          activeChannel.actual_shipping_fee ??
+          activeChannel.actualShippingFee ??
+          15000,
+      )
+    : delivery === "express"
+      ? 35000
+      : 15000;
 
   const estimatedDays = isMockItem
     ? `${delivery === "express" ? "1–2" : "3–5"} business days`
