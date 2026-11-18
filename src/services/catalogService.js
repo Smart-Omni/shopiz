@@ -193,8 +193,9 @@ export const catalogService = {
     return data.categories || [];
   },
 
-  async getProducts({ query, categoryId, sort, page = 1, pageSize = 50 } = {}) {
+  async getProducts({ shopId, query, categoryId, sort, page = 1, pageSize = 50 } = {}) {
     const params = new URLSearchParams();
+    if (shopId) params.set("shop_id", String(shopId));
     if (query) params.set("q", query);
     if (categoryId) params.set("category_id", categoryId);
     if (sort) params.set("sort", sort);

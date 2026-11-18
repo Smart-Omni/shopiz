@@ -77,9 +77,16 @@ function Storefront({ shop }) {
     Array.isArray(shop.catalogProducts) && shop.catalogProducts.length > 0
       ? shop.catalogProducts
       : [];
-  const categories = [
-    ...new Set(catalog.map((product) => product.category).filter(Boolean)),
-  ];
+  const categoryCounts = {};
+  for (const product of catalog) {
+    if (product.category) {
+      categoryCounts[product.category] =
+        (categoryCounts[product.category] || 0) + 1;
+    }
+  }
+  const categories = Object.keys(categoryCounts).sort(
+    (a, b) => categoryCounts[b] - categoryCounts[a],
+  );
   const filtered = catalog.filter(
     (product) =>
       (!category || product.category === category) &&
@@ -105,12 +112,13 @@ function Storefront({ shop }) {
             ? (b.sold || 0) - (a.sold || 0)
             : 0,
   );
-  const totalPages = Math.max(1, Math.ceil(filtered.length / 6));
+  const PAGE_SIZE = 20;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const page = Math.max(
     1,
     Math.min(totalPages, Math.floor(Number(params.get("page"))) || 1),
   );
-  const visible = filtered.slice((page - 1) * 6, page * 6);
+  const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const topProducts = [...catalog].sort((a, b) => (b.sold || 0) - (a.sold || 0));
   const latest = [...catalog].reverse();
   const offers = (shop.offers || shop.vouchers || []).filter(
@@ -149,7 +157,7 @@ function Storefront({ shop }) {
   return (
     <div className={s.page}>
       <nav className={s.breadcrumb} aria-label="Breadcrumb">
-        <Link to="/">Home</Link>
+        <Link to="/">Trang chủ</Link>
         <ChevronRight size={12} />
         <Link to="/collection/mall">Shopiz Mall</Link>
         <ChevronRight size={12} />
@@ -166,7 +174,7 @@ function Storefront({ shop }) {
               <h1>{shop.name}</h1>
               <p>
                 <span />
-                Online recently
+                Vừa mới truy cập
               </p>
               <small>{shop.tagline}</small>
             </div>
@@ -174,26 +182,26 @@ function Storefront({ shop }) {
           <div className={s.profileActions}>
             <button aria-pressed={followed} onClick={toggleFollow}>
               {followed ? <Check size={14} /> : <Plus size={14} />}{" "}
-              {followed ? "Following" : "Follow"}
+              {followed ? "Đang theo dõi" : "Theo dõi"}
             </button>
             <button onClick={() => setChatOpen(true)}>
               <MessageCircle size={14} />
-              Chat Now
+              Chat ngay
             </button>
           </div>
         </div>
         <dl className={s.stats}>
           {[
-            [Package, "Products", catalog.length],
+            [Package, "Sản phẩm", catalog.length],
             [
               Users,
-              "Followers",
-              (Number(shop.followers || 12800) + (followed ? 1 : 0)).toLocaleString("en-US"),
+              "Người theo dõi",
+              (Number(shop.followers || 12800) + (followed ? 1 : 0)).toLocaleString("vi-VN"),
             ],
-            [Star, "Shop rating", `${shop.rating || "5.0"} / 5`],
-            [MessageCircle, "Response rate", shop.responseRate || "98%"],
-            [Clock, "Response time", "Within a few hours"],
-            [Store, "Joined", shop.joined || "2 years ago"],
+            [Star, "Đánh giá", `${shop.rating || "5.0"} / 5`],
+            [MessageCircle, "Tỉ lệ phản hồi", shop.responseRate || "98%"],
+            [Clock, "Thời gian phản hồi", "Trong vài giờ"],
+            [Store, "Tham gia", shop.joined || "Gần đây"],
           ].map(([Icon, label, value]) => (
             <div key={label}>
               <dt>
@@ -219,11 +227,11 @@ function Storefront({ shop }) {
       <div className={s.shopNavigation}>
         <nav aria-label="Shop navigation">
           {[
-            ["home", "Home"],
-            ["products", "All Products"],
-            ["new", "New Arrivals"],
-            ["top", "Top Sales"],
-            ["about", "About Shop"],
+            ["home", "Trang chủ"],
+            ["products", "Tất cả sản phẩm"],
+            ["new", "Hàng mới về"],
+            ["top", "Bán chạy"],
+            ["about", "Hồ sơ shop"],
           ].map(([value, label]) => (
             <button
               key={value}
@@ -248,7 +256,7 @@ function Storefront({ shop }) {
         >
           <input
             aria-label="Search this shop"
-            placeholder="Search in this shop"
+            placeholder="Tìm trong Shop này"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -462,14 +470,14 @@ function Storefront({ shop }) {
           <aside className={s.sidebar} aria-label="Shop categories">
             <h2>
               <Store size={15} />
-              SHOP CATEGORIES
+              DANH MỤC SHOP
             </h2>
             <button
               className={!category ? s.selectedCategory : ""}
               aria-pressed={!category}
               onClick={() => update({ category: "" })}
             >
-              All Products<span>{catalog.length}</span>
+              Tất cả sản phẩm<span>{catalog.length}</span>
             </button>
             {categories.map((name) => (
               <button
@@ -479,7 +487,7 @@ function Storefront({ shop }) {
                 onClick={() => update({ category: name })}
               >
                 {name}
-                <span>{catalog.filter((p) => p.category === name).length}</span>
+                <span>{categoryCounts[name] || 0}</span>
               </button>
             ))}
           </aside>
@@ -487,11 +495,10 @@ function Storefront({ shop }) {
             <div className={s.catalogHeading}>
               <h2>
                 {keyword
-                  ? `Results for “${keyword}”`
-                  : category || "All Products"}
+                  ? `Kết quả tìm kiếm cho “${keyword}”`
+                  : category || "Tất cả sản phẩm"}
                 <span>
-                  {filtered.length}{" "}
-                  {filtered.length === 1 ? "product" : "products"}
+                  {filtered.length} sản phẩm
                 </span>
               </h2>
               {(keyword || category) && (
@@ -501,53 +508,53 @@ function Storefront({ shop }) {
                     setSearch("");
                   }}
                 >
-                  Clear filters
+                  Xóa bộ lọc
                   <X size={12} />
                 </button>
               )}
             </div>
             <div className={s.sortBar}>
-              <span>Sort by</span>
+              <span>Sắp xếp theo</span>
               <button
                 className={sort === "featured" ? s.activeSort : ""}
                 onClick={() => update({ sort: "featured" })}
               >
-                Featured
+                Nổi bật
               </button>
               <button
                 className={sort === "latest" ? s.activeSort : ""}
                 onClick={() => update({ sort: "latest" })}
               >
-                Latest
+                Mới nhất
               </button>
               <button
                 className={sort === "sales" ? s.activeSort : ""}
                 onClick={() => update({ sort: "sales" })}
               >
-                Top Sales
+                Bán chạy
               </button>
               <select
-                aria-label="Shop price sort"
+                aria-label="Sắp xếp giá shop"
                 value={sort.startsWith("price-") ? sort : ""}
                 onChange={(e) => update({ sort: e.target.value })}
               >
                 <option value="" disabled>
-                  Price
+                  Giá
                 </option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
+                <option value="price-asc">Giá: Thấp đến Cao</option>
+                <option value="price-desc">Giá: Cao đến Thấp</option>
               </select>
             </div>
             {visible.length ? (
               <>
-                <div className={s.catalogGrid} aria-label="Shop products">
+                <div className={s.catalogGrid} aria-label="Sản phẩm của shop">
                   {visible.map((p) => (
                     <ProductCard key={p.id} product={p} />
                   ))}
                 </div>
-                <nav className={s.pagination} aria-label="Shop product pages">
+                <nav className={s.pagination} aria-label="Phân trang sản phẩm shop">
                   <button
-                    aria-label="Previous shop page"
+                    aria-label="Trang trước"
                     disabled={page === 1}
                     onClick={() => update({ page: page - 1 })}
                   >
@@ -556,7 +563,7 @@ function Storefront({ shop }) {
                   {Array.from({ length: totalPages }, (_, i) => (
                     <button
                       key={i}
-                      aria-label={`Shop page ${i + 1}`}
+                      aria-label={`Trang ${i + 1}`}
                       aria-current={page === i + 1 ? "page" : undefined}
                       onClick={() => update({ page: i + 1 })}
                     >
@@ -564,7 +571,7 @@ function Storefront({ shop }) {
                     </button>
                   ))}
                   <button
-                    aria-label="Next shop page"
+                    aria-label="Trang sau"
                     disabled={page === totalPages}
                     onClick={() => update({ page: page + 1 })}
                   >
@@ -606,33 +613,52 @@ export default function ShopPage() {
     }
 
     setLoading(true);
-    catalogService
-      .getShopDetail(shopId)
-      .then((detail) => {
-        if (!active || !detail) return;
-        const mappedProducts = (detail.products || []).map((p) =>
+    Promise.allSettled([
+      catalogService.getShopDetail(shopId),
+      catalogService.getProducts({ shopId, pageSize: 100 }),
+    ])
+      .then(([detailRes, prodsRes]) => {
+        if (!active) return;
+        const detail =
+          detailRes.status === "fulfilled" ? detailRes.value : null;
+        const prodsData =
+          prodsRes.status === "fulfilled" ? prodsRes.value : null;
+
+        if (!detail && (!prodsData || !prodsData.products?.length)) return;
+
+        // Use products from getProducts which includes category_name, category_id and metrics
+        let rawProducts = [];
+        if (prodsData?.products?.length) {
+          rawProducts = prodsData.products;
+        } else if (detail?.products?.length) {
+          rawProducts = detail.products;
+        }
+
+        const mappedProducts = rawProducts.map((p) =>
           mapBackendProduct({
             ...p,
-            shop_id: detail.shop_id,
-            shop_name: detail.shop_name,
-            shop_rating: detail.rating,
+            shop_id: detail?.shop_id || shopId,
+            shop_name: detail?.shop_name || p.shop_name,
+            shop_rating: detail?.rating,
           }),
         );
 
+        const shopName =
+          detail?.shop_name || rawProducts[0]?.shop_name || "Official Store";
         setShop({
-          id: String(detail.shop_id),
-          brand: (detail.shop_name || "Shop").split(" ")[0],
-          name: detail.shop_name || "Official Store",
-          tagline: detail.tagline || "Official Flagship Store",
+          id: String(detail?.shop_id || shopId),
+          brand: shopName.split(" ")[0],
+          name: shopName,
+          tagline: detail?.tagline || "Official Flagship Store",
           offer: "Official Store Quality Guarantee",
           products: mappedProducts.map((p) => p.id),
           catalogProducts: mappedProducts,
-          followers: Number(detail.followers || 12800),
-          rating: String(detail.rating || "5.0"),
-          responseRate: detail.response_rate || "98%",
-          responseTime: detail.response_time || "Within a few hours",
-          joined: detail.joined || "Recently",
-          offers: (detail.vouchers || []).map((v) => ({
+          followers: Number(detail?.followers || 12800),
+          rating: String(detail?.rating || "5.0"),
+          responseRate: detail?.response_rate || "98%",
+          responseTime: detail?.response_time || "Within a few hours",
+          joined: detail?.joined || "Recently",
+          offers: (detail?.vouchers || []).map((v) => ({
             code: v.code,
             type: v.type,
             percent: v.percent,
@@ -641,13 +667,16 @@ export default function ShopPage() {
             maxDiscount: v.maxDiscount,
             expiresAt: v.expiresAt,
           })),
-          hasCampaign: Boolean(detail.has_campaign || (detail.vouchers && detail.vouchers.length > 0)),
+          hasCampaign: Boolean(
+            detail?.has_campaign ||
+              (detail?.vouchers && detail.vouchers.length > 0),
+          ),
           heroTitle: "A little more\nin every day.",
           heroText:
             "Authentic merchandise with official warranty and fast shipping.",
           story:
-            detail.story ||
-            "Welcome to our official store on Shopiz. Explore quality everyday essentials, trusted electronics, and lifestyle finds.",
+            detail?.story ||
+            `Welcome to ${shopName} on Shopiz. Explore quality everyday essentials, trusted electronics, and lifestyle finds.`,
         });
       })
       .catch((err) => {
