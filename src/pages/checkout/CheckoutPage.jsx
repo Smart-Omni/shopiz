@@ -150,6 +150,18 @@ export default function CheckoutPage() {
                         : c.actualShippingFee !== undefined && c.actualShippingFee !== null
                           ? Number(c.actualShippingFee)
                           : 15000;
+                const actualFee =
+                  c.actual_shipping_fee !== undefined && c.actual_shipping_fee !== null
+                    ? Number(c.actual_shipping_fee)
+                    : c.actualShippingFee !== undefined && c.actualShippingFee !== null
+                      ? Number(c.actualShippingFee)
+                      : buyerFee;
+                const rebate =
+                  c.shopee_shipping_rebate !== undefined && c.shopee_shipping_rebate !== null
+                    ? Number(c.shopee_shipping_rebate)
+                    : c.shopeeShippingRebate !== undefined && c.shopeeShippingRebate !== null
+                      ? Number(c.shopeeShippingRebate)
+                      : 0;
                 return {
                   id: String(
                     c.channel_id ||
@@ -159,6 +171,8 @@ export default function CheckoutPage() {
                   ),
                   name: c.carrier_name || c.channel_name || c.channelName || c.service_type || "Nhanh (Tiêu chuẩn)",
                   fee: buyerFee,
+                  actualFee,
+                  rebate,
                   estimate:
                     c.estimated_delivery_days ||
                     c.estimatedDeliveryDays ||
@@ -299,6 +313,10 @@ export default function CheckoutPage() {
               ? 839910244
               : 910283751;
         const currentMethod = methodFor(group.shop.id);
+        const resolvedFee =
+          currentMethod.fee !== undefined && currentMethod.fee !== null
+            ? Number(currentMethod.fee)
+            : 15000;
         return {
           shop_id: backendShopId,
           channel_id: currentMethod.channelId || 30001,
@@ -307,7 +325,7 @@ export default function CheckoutPage() {
             (currentMethod.id === "express"
               ? "Hỏa tốc"
               : "Shopee Xpress"),
-          shipping_fee: currentMethod.fee || 15000,
+          shipping_fee: resolvedFee,
           message_to_seller: notes[group.shop.id] || "",
           voucher_code: discountStatus.eligible ? appliedVoucher.code : undefined,
           items: group.lines.map((l) => ({
@@ -338,8 +356,14 @@ export default function CheckoutPage() {
             ...order,
             id: firstSn,
             orderSn: firstSn,
-            total: backendTotal > 0 ? backendTotal : order.total,
-            shippingFee: backendShipping > 0 ? backendShipping : order.shippingFee,
+            total:
+              Number.isFinite(backendTotal) && backendTotal >= 0
+                ? backendTotal
+                : order.total,
+            shippingFee:
+              Number.isFinite(backendShipping) && backendShipping >= 0
+                ? backendShipping
+                : order.shippingFee,
             backendOrders: res.orders,
           };
           saveMockOrder(updated);
@@ -570,7 +594,32 @@ export default function CheckoutPage() {
                   >
                     Thay đổi
                   </button>
-                  <span>{money(method.fee)}</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                    {method.fee === 0 ? (
+                      <>
+                        {method.actualFee > 0 && (
+                          <del style={{ color: "#888", fontSize: "12px" }}>
+                            {money(method.actualFee)}
+                          </del>
+                        )}
+                        <span style={{ color: "#00bfa5", fontWeight: 600 }}>0 ₫</span>
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            background: "#e6f8f5",
+                            color: "#00bfa5",
+                            padding: "1px 6px",
+                            borderRadius: "2px",
+                            fontWeight: 500,
+                          }}
+                        >
+                          Freeship Xtra
+                        </span>
+                      </>
+                    ) : (
+                      money(method.fee)
+                    )}
+                  </span>
                 </div>
                 <p>Thời gian nhận hàng: {method.estimate}</p>
                 <small>
@@ -649,7 +698,28 @@ export default function CheckoutPage() {
           </div>
           <div>
             <dt>Tổng cộng tiền phí vận chuyển</dt>
-            <dd data-testid="checkout-shipping">{money(shippingFee)}</dd>
+            <dd data-testid="checkout-shipping">
+              {shippingFee === 0 ? (
+                <span style={{ color: "#00bfa5", fontWeight: 600 }}>
+                  0 ₫{" "}
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      background: "#e6f8f5",
+                      color: "#00bfa5",
+                      padding: "1px 6px",
+                      borderRadius: "2px",
+                      fontWeight: 500,
+                      marginLeft: 4,
+                    }}
+                  >
+                    Miễn phí
+                  </span>
+                </span>
+              ) : (
+                money(shippingFee)
+              )}
+            </dd>
           </div>
           <div>
             <dt>Giảm giá từ Voucher</dt>
@@ -720,7 +790,20 @@ export default function CheckoutPage() {
                   <strong>{method.name}</strong>
                   <small>{method.estimate}</small>
                 </span>
-                <strong>{money(method.fee)}</strong>
+                <div>
+                  {method.fee === 0 ? (
+                    <div style={{ textAlign: "right" }}>
+                      {method.actualFee > 0 && (
+                        <del style={{ fontSize: "12px", color: "#888", display: "block" }}>
+                          {money(method.actualFee)}
+                        </del>
+                      )}
+                      <strong style={{ color: "#00bfa5" }}>0 ₫ (Miễn phí)</strong>
+                    </div>
+                  ) : (
+                    <strong>{money(method.fee)}</strong>
+                  )}
+                </div>
               </label>
             ))}
           </div>
