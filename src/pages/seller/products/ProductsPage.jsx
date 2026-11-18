@@ -538,19 +538,19 @@ export default function ProductsPage({ shopId = 727720655, onCreateProduct = () 
             <tbody>
               {paginatedProducts.map((p) => {
                 const isSelected = selectedIds.includes(p.item_id);
-                const hasModels = p.has_model && p.models && p.models.length > 0;
-                const totalStock = hasModels
+                const hasVariations = Boolean(p.has_model && p.models && p.models.length > 0);
+                const totalStock = (p.models && p.models.length > 0)
                   ? p.models.reduce((acc, m) => acc + (m.seller_stock || 0), 0)
-                  : p.seller_stock || 0;
+                  : (p.seller_stock || 0);
                 const isExpanded = expandedModels[p.item_id] ?? false;
 
                 // Variations limit preview to 2 unless expanded
-                const visibleModels = hasModels
+                const visibleModels = hasVariations
                   ? isExpanded
                     ? p.models
                     : p.models.slice(0, 2)
                   : [];
-                const remainingModelsCount = hasModels ? Math.max(0, p.models.length - 2) : 0;
+                const remainingModelsCount = hasVariations ? Math.max(0, p.models.length - 2) : 0;
                 const firstImg = p.images?.image_url_list?.[0];
 
                 return (
@@ -622,6 +622,19 @@ export default function ProductsPage({ shopId = 727720655, onCreateProduct = () 
                           >
                             Cập nhật
                           </button>
+                          {!hasVariations && (
+                            <button
+                              type="button"
+                              className={s.actionLink}
+                              onClick={() => {
+                                const defaultModel = p.models?.[0];
+                                setStockModal({ item: p, model: defaultModel });
+                                setNewStockVal(String(defaultModel?.seller_stock ?? p.seller_stock ?? 0));
+                              }}
+                            >
+                              Sửa kho
+                            </button>
+                          )}
                           <button
                             type="button"
                             className={s.actionLink}
@@ -634,7 +647,7 @@ export default function ProductsPage({ shopId = 727720655, onCreateProduct = () 
                     </tr>
 
                     {/* Variation Sub-rows */}
-                    {hasModels &&
+                    {hasVariations &&
                       visibleModels.map((m) => (
                         <tr key={m.model_id} className={s.variationRow}>
                           <td />
@@ -675,7 +688,7 @@ export default function ProductsPage({ shopId = 727720655, onCreateProduct = () 
                       ))}
 
                     {/* Variation Expansion Toggle */}
-                    {hasModels && remainingModelsCount > 0 && !isExpanded && (
+                    {hasVariations && remainingModelsCount > 0 && !isExpanded && (
                       <tr className={s.expansionRow}>
                         <td />
                         <td colSpan={6}>
@@ -690,7 +703,7 @@ export default function ProductsPage({ shopId = 727720655, onCreateProduct = () 
                       </tr>
                     )}
 
-                    {hasModels && isExpanded && p.models.length > 2 && (
+                    {hasVariations && isExpanded && p.models.length > 2 && (
                       <tr className={s.expansionRow}>
                         <td />
                         <td colSpan={6}>
@@ -713,7 +726,7 @@ export default function ProductsPage({ shopId = 727720655, onCreateProduct = () 
             <div className={s.productGrid}>
               {paginatedProducts.map((product) => {
                 const image = product.images?.image_url_list?.[0];
-                const stock = product.has_model && product.models?.length
+                const stock = (product.models && product.models.length > 0)
                   ? product.models.reduce((total, model) => total + Number(model.seller_stock || 0), 0)
                   : Number(product.seller_stock || 0);
                 return (
@@ -724,7 +737,7 @@ export default function ProductsPage({ shopId = 727720655, onCreateProduct = () 
                       <small>ID: {product.item_id} · {product.category_name}</small>
                       <strong>{money(product.original_price)}</strong>
                       <span>{stock === 0 ? "Hết hàng" : `Kho hàng: ${stock}`}</span>
-                      <div className={s.productCardRating}>{productMetrics[String(p.item_id)] ? <><Star size={13} fill="#faad14" color="#faad14" /> {Number(productMetrics[String(p.item_id)].rating_star).toFixed(1)} ({productMetrics[String(p.item_id)].comment_count}) · {productMetrics[String(p.item_id)].sale} sold · {productMetrics[String(p.item_id)].views} views · {productMetrics[String(p.item_id)].likes} likes</> : "—"}</div>
+                      <div className={s.productCardRating}>{productMetrics[String(product.item_id)] ? <><Star size={13} fill="#faad14" color="#faad14" /> {Number(productMetrics[String(product.item_id)].rating_star).toFixed(1)} ({productMetrics[String(product.item_id)].comment_count}) · {productMetrics[String(product.item_id)].sale} sold · {productMetrics[String(product.item_id)].views} views · {productMetrics[String(product.item_id)].likes} likes</> : "—"}</div>
                       <div className={s.productCardActions}>
                         <button type="button" className={s.actionLink} onClick={() => onEditProduct(product)}>Cập nhật</button>
                         <button type="button" className={s.actionLink} onClick={() => handleToggleUnlist(product)}>{product.item_status === "NORMAL" ? "Ẩn" : "Hiện"}</button>
