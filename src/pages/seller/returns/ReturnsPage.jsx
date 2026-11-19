@@ -465,20 +465,38 @@ export default function ReturnsPage({ shopId = 727720655 }) {
                     <td className={s.prodCell}>
                       {r.items && r.items.length > 0 ? (
                         <div className={s.itemsWrap}>
-                          {r.items.map((it, idx) => (
-                            <div key={idx} className={s.prodItem}>
-                              <div className={s.prodThumb}>
-                                <Package size={22} color="#bfbfbf" />
+                          {r.items.map((it, idx) => {
+                            const itImg = it.image || it.image_url || it.image_info?.image_url;
+                            return (
+                              <div key={idx} className={s.prodItem}>
+                                <div className={s.prodThumb} style={{ overflow: "hidden", position: "relative" }}>
+                                  {itImg ? (
+                                    <img
+                                      src={itImg}
+                                      alt=""
+                                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = "none";
+                                        if (e.currentTarget.nextElementSibling) {
+                                          e.currentTarget.nextElementSibling.style.display = "flex";
+                                        }
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div style={{ display: itImg ? "none" : "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+                                    <Package size={22} color="#bfbfbf" />
+                                  </div>
+                                </div>
+                                <div className={s.prodInfo}>
+                                  <span className={s.prodName}>{it.item_name}</span>
+                                  {it.model_name && (
+                                    <span className={s.modelName}>Phân loại: {it.model_name}</span>
+                                  )}
+                                  <span className={s.prodQty}>x{it.quantity}</span>
+                                </div>
                               </div>
-                              <div className={s.prodInfo}>
-                                <span className={s.prodName}>{it.item_name}</span>
-                                {it.model_name && (
-                                  <span className={s.modelName}>Phân loại: {it.model_name}</span>
-                                )}
-                                <span className={s.prodQty}>x{it.quantity}</span>
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className={s.prodItem}>

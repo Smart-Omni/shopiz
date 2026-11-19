@@ -438,20 +438,40 @@ export default function AllOrdersPage({ shopId = 727720655 }) {
                       <td className={s.productCol}>
                         {order.items && order.items.length > 0 ? (
                           <div className={s.itemList}>
-                            {order.items.map((item) => (
-                              <div key={item.order_item_id} className={s.productItem}>
-                                <div className={s.thumbWrap}>
-                                  <Package size={24} className={s.thumbIcon} />
+                            {order.items.map((item) => {
+                              const itemImg = item.image || item.image_url || item.image_info?.image_url;
+                              return (
+                                <div key={item.order_item_id} className={s.productItem}>
+                                  <div className={s.thumbWrap}>
+                                    {itemImg ? (
+                                      <img
+                                        src={itemImg}
+                                        alt={item.item_name}
+                                        className={s.thumbImg}
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = "none";
+                                          if (e.currentTarget.nextElementSibling) {
+                                            e.currentTarget.nextElementSibling.style.display = "block";
+                                          }
+                                        }}
+                                      />
+                                    ) : null}
+                                    <Package
+                                      size={24}
+                                      className={s.thumbIcon}
+                                      style={{ display: itemImg ? "none" : "block" }}
+                                    />
+                                  </div>
+                                  <div className={s.itemInfo}>
+                                    <span className={s.itemName}>{item.item_name}</span>
+                                    {item.model_name && (
+                                      <span className={s.modelName}>Phân loại: {item.model_name}</span>
+                                    )}
+                                    <span className={s.itemQty}>x{item.quantity}</span>
+                                  </div>
                                 </div>
-                                <div className={s.itemInfo}>
-                                  <span className={s.itemName}>{item.item_name}</span>
-                                  {item.model_name && (
-                                    <span className={s.modelName}>Phân loại: {item.model_name}</span>
-                                  )}
-                                  <span className={s.itemQty}>x{item.quantity}</span>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         ) : (
                           <div className={s.productItem}>

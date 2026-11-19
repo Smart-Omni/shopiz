@@ -113,7 +113,7 @@ export default function ProductSelectModal({
         nextMap[String(p.item_id)] = {
           item_id: p.item_id,
           item_name: p.item_name,
-          image: p.image || p.images?.[0] || "",
+          image: p.image || p.images?.image_url_list?.[0] || (Array.isArray(p.images) ? p.images[0] : "") || "",
           price: Number(p.current_price || p.original_price || 0),
           stock,
         };
@@ -135,7 +135,7 @@ export default function ProductSelectModal({
       nextMap[key] = {
         item_id: p.item_id,
         item_name: p.item_name,
-        image: p.image || p.images?.[0] || "",
+        image: p.image || p.images?.image_url_list?.[0] || (Array.isArray(p.images) ? p.images[0] : "") || "",
         price: Number(p.current_price || p.original_price || 0),
         stock,
       };
@@ -290,7 +290,7 @@ export default function ProductSelectModal({
                           ? p.models.reduce((sum, m) => sum + Number(m.seller_stock || m.normal_stock || 0), 0)
                           : Number(p.normal_stock ?? p.stock ?? 50);
                       const price = Number(p.current_price || p.original_price || 0);
-                      const thumb = p.image || p.images?.[0] || "";
+                      const thumb = p.image || p.images?.image_url_list?.[0] || (Array.isArray(p.images) ? p.images[0] : "") || "";
 
                       return (
                         <tr key={p.item_id} onClick={() => handleToggleProduct(p)} style={{ cursor: "pointer" }}>

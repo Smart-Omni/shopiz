@@ -29,6 +29,29 @@ const money = (n) =>
     maximumFractionDigits: 0,
   }).format(n);
 
+function extractProductThumb(p) {
+  if (!p) return "";
+  if (typeof p.image === "string" && p.image) return p.image;
+  if (typeof p.imageUrl === "string" && p.imageUrl) return p.imageUrl;
+  if (typeof p.image_url === "string" && p.image_url) return p.image_url;
+
+  const imgs = p.images || p.imagesJson;
+  if (Array.isArray(imgs) && imgs.length > 0) {
+    const first = imgs[0];
+    return typeof first === "string" ? first : (first?.url || first?.image_url || "");
+  }
+  if (imgs && typeof imgs === "object") {
+    if (Array.isArray(imgs.image_url_list) && imgs.image_url_list.length > 0) {
+      return imgs.image_url_list[0] || "";
+    }
+    if (Array.isArray(imgs.images) && imgs.images.length > 0) {
+      const first = imgs.images[0];
+      return typeof first === "string" ? first : (first?.url || "");
+    }
+  }
+  return "";
+}
+
 const STATUS_TABS = [
   { id: "all", label: "Tất cả" },
   { id: "active", label: "Đang hoạt động" },
@@ -551,7 +574,7 @@ export default function ProductsPage({ shopId = 727720655, onCreateProduct = () 
                     : p.models.slice(0, 2)
                   : [];
                 const remainingModelsCount = hasVariations ? Math.max(0, p.models.length - 2) : 0;
-                const firstImg = p.images?.image_url_list?.[0];
+                const firstImg = extractProductThumb(p);
 
                 return (
                   <React.Fragment key={p.item_id}>
@@ -570,12 +593,24 @@ export default function ProductsPage({ shopId = 727720655, onCreateProduct = () 
                       <td className={s.titleCell}>
                         <div className={s.titleWrap}>
                           {firstImg ? (
-                            <img src={firstImg} alt="" className={s.thumbImg} />
-                          ) : (
-                            <div className={s.thumbFallback}>
-                              <Package size={22} color="#bfbfbf" />
-                            </div>
-                          )}
+                            <img
+                              src={firstImg}
+                              alt=""
+                              className={s.thumbImg}
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                                if (e.currentTarget.nextElementSibling) {
+                                  e.currentTarget.nextElementSibling.style.display = "flex";
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <div
+                            className={s.thumbFallback}
+                            style={{ display: firstImg ? "none" : "flex" }}
+                          >
+                            <Package size={22} color="#bfbfbf" />
+                          </div>
                           <div className={s.titleDetails}>
                             <span className={s.productName}>{p.item_name}</span>
                             <div className={s.skuIdLine}>
@@ -725,13 +760,31 @@ export default function ProductsPage({ shopId = 727720655, onCreateProduct = () 
           ) : (
             <div className={s.productGrid}>
               {paginatedProducts.map((product) => {
-                const image = product.images?.image_url_list?.[0];
+                const image = extractProductThumb(product);
                 const stock = (product.models && product.models.length > 0)
                   ? product.models.reduce((total, model) => total + Number(model.seller_stock || 0), 0)
                   : Number(product.seller_stock || 0);
                 return (
                   <article className={s.productCard} key={product.item_id}>
-                    {image ? <img className={s.productCardImage} src={image} alt="" /> : <div className={s.productCardImageFallback}><Package size={32} /></div>}
+                    {image ? (
+                      <img
+                        className={s.productCardImage}
+                        src={image}
+                        alt=""
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          if (e.currentTarget.nextElementSibling) {
+                            e.currentTarget.nextElementSibling.style.display = "flex";
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={s.productCardImageFallback}
+                      style={{ display: image ? "none" : "flex" }}
+                    >
+                      <Package size={32} />
+                    </div>
                     <div className={s.productCardBody}>
                       <span className={s.productCardName}>{product.item_name}</span>
                       <small>ID: {product.item_id} · {product.category_name}</small>
