@@ -15,6 +15,11 @@ export const sellerService = {
     return data.orders || [];
   },
 
+  async getOrderDetail(orderSn) {
+    const data = await api.get(`/simulator/order/detail?order_sn=${encodeURIComponent(orderSn)}`);
+    return data.order || data;
+  },
+
   async shipOrder(orderSn, trackingNumber = "") {
     const data = await api.post("/simulator/order/ship", {
       order_sn: orderSn,

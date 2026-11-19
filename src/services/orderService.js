@@ -10,8 +10,8 @@ export const orderService = {
   },
 
   async getOrderDetail(orderSn) {
-    const data = await api.get(`/simulator/order/detail?order_sn=${orderSn}`);
-    return data.order;
+    const data = await api.get(`/simulator/order/detail?order_sn=${encodeURIComponent(orderSn)}`);
+    return data.order || data;
   },
 
   async confirmDelivery(orderSn, buyerUserId) {

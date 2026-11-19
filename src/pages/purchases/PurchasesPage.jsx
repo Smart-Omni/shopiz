@@ -23,8 +23,8 @@ import {
   orderStorageKey,
   updateOrderAction,
 } from "../../data/orders";
-import CheckoutDialog from "../checkout/CheckoutDialog";
-import dialogStyles from "../checkout/CheckoutPage.module.css";
+import { getThumbnailUrl } from "../../utils/imageUrl";
+import OrderDetailModal from "../../components/order/OrderDetailModal";
 import s from "./PurchasesPage.module.css";
 import OrderActionDialog from "./OrderActionDialog";
 import ChatDialog from "../../components/chat/ChatDialog";
@@ -361,8 +361,10 @@ export default function PurchasesPage() {
                         <Link to={`/product/${item.productId}`}>
                           <img
                             src={
-                              item.product?.image ||
-                              item.image ||
+                              getThumbnailUrl(
+                                item.product?.image || item.image,
+                                100
+                              ) ||
                               "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=500&q=85"
                             }
                             alt={item.title}
@@ -545,57 +547,15 @@ export default function PurchasesPage() {
         />
       )}
       {popup && popup.type === "details" && (
-        <CheckoutDialog
-          title="Order Details"
+        <OrderDetailModal
+          orderSn={popup.order.orderSn || popup.order.id}
+          fallbackOrder={popup.order}
+          isOpen={popup?.type === "details"}
           onClose={() => setPopup(null)}
-        >
-          <div className={dialogStyles.dialogBody}>
-            <p className={s.detailId}>{popup.order.id}</p>
-            <p className={s.demoNote}>
-              {popup.order.isSample ? "Sample order" : "Demo order"} ·{" "}
-              {statusLabel(popup.order)}
-            </p>
-            {popup.order.items.map((item, index) => (
-              <p key={index} className={s.detailLine}>
-                <span>
-                  {item.title} × {item.quantity}
-                </span>
-                <strong>{money(item.price * item.quantity)}</strong>
-              </p>
-            ))}
-            <dl className={s.breakdown}>
-              {[
-                ["Merchandise Subtotal", popup.order.subtotal],
-                ["Shipping", popup.order.shippingFee],
-                ["Voucher Discount", -popup.order.discount],
-                ["Order Total", popup.order.total],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <dt>{label}</dt>
-                  <dd>
-                    {value < 0 ? "−" : ""}
-                    {money(Math.abs(value))}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <p className={s.demoNote}>
-              Payment:{" "}
-              {popup.order.payment === "wallet"
-                ? "Demo wallet"
-                : "Cash on delivery"}
-              . No real payment or shipment.
-            </p>
-          </div>
-          <footer className={dialogStyles.dialogFooter}>
-            <button
-              className={dialogStyles.secondary}
-              onClick={() => setPopup(null)}
-            >
-              Close
-            </button>
-          </footer>
-        </CheckoutDialog>
+          isSeller={false}
+          onConfirmDelivery={handleConfirmDelivery}
+          onReview={(ord) => setPopup({ type: "review", order: ord || popup.order })}
+        />
       )}
     </div>
   );

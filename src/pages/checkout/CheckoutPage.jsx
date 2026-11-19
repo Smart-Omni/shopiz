@@ -23,6 +23,7 @@ import { voucherStatus } from "../../data/vouchers";
 import catalogService from "../../services/catalogService";
 import checkoutService from "../../services/checkoutService";
 import { getNumericBuyerId } from "../../services/authService";
+import { getThumbnailUrl } from "../../utils/imageUrl";
 import VoucherDialog from "../cart/VoucherDialog";
 import AddressDialog from "./AddressDialog";
 import CheckoutDialog from "./CheckoutDialog";
@@ -537,7 +538,10 @@ export default function CheckoutPage() {
               >
                 <div className={s.product}>
                   <Link to={`/product/${line.productId}`}>
-                    <img src={line.product.image} alt={line.product.title} />
+                    <img
+                      src={getThumbnailUrl(line.product.image, 100)}
+                      alt={line.product.title}
+                    />
                   </Link>
                   <Link to={`/product/${line.productId}`}>
                     {line.product.title}

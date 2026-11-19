@@ -17,6 +17,7 @@ import { useCart } from "../../components/cart/CartProvider";
 import { getProductDetails } from "../../data/productDetails";
 import { money } from "../../data/catalog";
 import { ProductGrid } from "../../components/Commerce";
+import { getThumbnailUrl } from "../../utils/imageUrl";
 import s from "./CartPage.module.css";
 import VoucherDialog from "./VoucherDialog";
 
@@ -67,7 +68,10 @@ function CartRow({ line, max }) {
       />
       <div className={s.product}>
         <Link to={`/product/${line.productId}`}>
-          <img src={line.product.image} alt={line.product.title} />
+          <img
+            src={getThumbnailUrl(line.product.image, 100)}
+            alt={line.product.title}
+          />
         </Link>
         <div>
           <Link className={s.productTitle} to={`/product/${line.productId}`}>

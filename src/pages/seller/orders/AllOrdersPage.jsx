@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import sellerService from "../../../services/sellerService";
 import SellerPagination from "../SellerPagination";
+import { getThumbnailUrl } from "../../../utils/imageUrl";
+import OrderDetailModal from "../../../components/order/OrderDetailModal";
 import s from "./AllOrdersPage.module.css";
 
 const money = (n) =>
@@ -75,6 +77,7 @@ export default function AllOrdersPage({ shopId = 727720655 }) {
 
   const [actionNotice, setActionNotice] = useState("");
   const [historyModal, setHistoryModal] = useState(false);
+  const [selectedOrderSn, setSelectedOrderSn] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -424,7 +427,17 @@ export default function AllOrdersPage({ shopId = 727720655 }) {
                           <span className={s.buyerName}>
                             Người mua: <strong>{order.buyer_username || order.recipient_name}</strong>
                           </span>
-                          <span className={s.orderSn}>Mã đơn hàng: {order.order_sn}</span>
+                          <span className={s.orderSn}>
+                            Mã đơn hàng:{" "}
+                            <button
+                              type="button"
+                              className={s.orderSnBtn}
+                              onClick={() => setSelectedOrderSn(order.order_sn)}
+                              title="Xem chi tiết đơn hàng"
+                            >
+                              {order.order_sn}
+                            </button>
+                          </span>
                           <span className={s.orderDate}>
                             {new Date(order.create_time * 1000).toLocaleString("vi-VN")}
                           </span>
@@ -439,7 +452,8 @@ export default function AllOrdersPage({ shopId = 727720655 }) {
                         {order.items && order.items.length > 0 ? (
                           <div className={s.itemList}>
                             {order.items.map((item) => {
-                              const itemImg = item.image || item.image_url || item.image_info?.image_url;
+                              const rawImg = item.image || item.image_url || item.image_info?.image_url;
+                              const itemImg = getThumbnailUrl(rawImg, 100);
                               return (
                                 <div key={item.order_item_id} className={s.productItem}>
                                   <div className={s.thumbWrap}>
@@ -529,6 +543,14 @@ export default function AllOrdersPage({ shopId = 727720655 }) {
                       {/* Thao tác */}
                       <td className={s.actionCol}>
                         <div className={s.actionList}>
+                          <button
+                            type="button"
+                            className={s.btnSecondaryAction}
+                            onClick={() => setSelectedOrderSn(order.order_sn)}
+                          >
+                            Chi tiết
+                          </button>
+
                           {order.order_status === "UNPAID" || order.order_status === "READY_TO_SHIP" ? (
                             <button
                               type="button"
@@ -629,6 +651,16 @@ export default function AllOrdersPage({ shopId = 727720655 }) {
           </div>
         </div>
       )}
+
+      {/* Order Detail Modal */}
+      <OrderDetailModal
+        orderSn={selectedOrderSn}
+        isOpen={!!selectedOrderSn}
+        onClose={() => setSelectedOrderSn(null)}
+        isSeller={true}
+        onShipOrder={handleArrangeShipment}
+        onPrintAwb={handlePrintAwb}
+      />
     </div>
   );
 }
