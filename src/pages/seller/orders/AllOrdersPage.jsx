@@ -16,7 +16,6 @@ import {
 import sellerService from "../../../services/sellerService";
 import SellerPagination from "../SellerPagination";
 import { getThumbnailUrl } from "../../../utils/imageUrl";
-import OrderDetailModal from "../../../components/order/OrderDetailModal";
 import s from "./AllOrdersPage.module.css";
 
 const money = (n) =>
@@ -57,7 +56,7 @@ function formatCountdown(shipByDateSeconds) {
   return `Còn ${hours} giờ`;
 }
 
-export default function AllOrdersPage({ shopId = 727720655 }) {
+export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
   const [params, setParams] = useSearchParams();
   const activeTabId = params.get("order_status") || "all";
 
@@ -77,7 +76,16 @@ export default function AllOrdersPage({ shopId = 727720655 }) {
 
   const [actionNotice, setActionNotice] = useState("");
   const [historyModal, setHistoryModal] = useState(false);
-  const [selectedOrderSn, setSelectedOrderSn] = useState(null);
+
+  const handleViewDetail = (orderSn) => {
+    if (onViewDetail) {
+      onViewDetail(orderSn);
+    } else {
+      const next = new URLSearchParams(params);
+      next.set("order_sn", orderSn);
+      setParams(next);
+    }
+  };
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -432,7 +440,7 @@ export default function AllOrdersPage({ shopId = 727720655 }) {
                             <button
                               type="button"
                               className={s.orderSnBtn}
-                              onClick={() => setSelectedOrderSn(order.order_sn)}
+                              onClick={() => handleViewDetail(order.order_sn)}
                               title="Xem chi tiết đơn hàng"
                             >
                               {order.order_sn}
@@ -546,7 +554,7 @@ export default function AllOrdersPage({ shopId = 727720655 }) {
                           <button
                             type="button"
                             className={s.btnSecondaryAction}
-                            onClick={() => setSelectedOrderSn(order.order_sn)}
+                            onClick={() => handleViewDetail(order.order_sn)}
                           >
                             Chi tiết
                           </button>
@@ -651,16 +659,6 @@ export default function AllOrdersPage({ shopId = 727720655 }) {
           </div>
         </div>
       )}
-
-      {/* Order Detail Modal */}
-      <OrderDetailModal
-        orderSn={selectedOrderSn}
-        isOpen={!!selectedOrderSn}
-        onClose={() => setSelectedOrderSn(null)}
-        isSeller={true}
-        onShipOrder={handleArrangeShipment}
-        onPrintAwb={handlePrintAwb}
-      />
     </div>
   );
 }

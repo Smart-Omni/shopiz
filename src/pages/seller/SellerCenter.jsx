@@ -37,6 +37,7 @@ import SellerHeader from "./SellerHeader";
 import SellerSidebar, { findActiveItem } from "./SellerSidebar";
 import SellerComingSoon from "./SellerComingSoon";
 import AllOrdersPage from "./orders/AllOrdersPage";
+import SellerOrderDetailPage from "./orders/SellerOrderDetailPage";
 import ProductsPage from "./products/ProductsPage";
 import AddProductPage from "./products/AddProductPage";
 import ReturnsPage from "./returns/ReturnsPage";
@@ -472,6 +473,8 @@ export default function SellerCenter() {
   );
 
   // Check if current tab is one of the implemented views
+  const orderDetailSn = params.get("order_sn");
+  const isOrderDetail = Boolean(orderDetailSn);
   const isOrdersTab =
     activeItem.id === "orders_all" || rawTab === "orders" || rawTab === "overview";
   const isProductsTab =
@@ -509,6 +512,7 @@ export default function SellerCenter() {
     activeItem.id === "shop_settings" || rawTab === "settings";
 
   const isImplemented =
+    isOrderDetail ||
     isOrdersTab ||
     isProductsTab ||
     isCreateProductTab ||
@@ -547,7 +551,13 @@ export default function SellerCenter() {
     <div className={s.seller}>
       <SellerHeader
         shopName={activeShopName}
-        breadcrumb={isProductWorkflow ? `Sản phẩm > ${isEditingProduct ? "Cập nhật sản phẩm" : "Thêm 1 sản phẩm mới"}` : activeItem.label}
+        breadcrumb={
+          isOrderDetail
+            ? `Quản Lý Đơn Hàng > Chi tiết đơn hàng #${orderDetailSn}`
+            : isProductWorkflow
+            ? `Sản phẩm > ${isEditingProduct ? "Cập nhật sản phẩm" : "Thêm 1 sản phẩm mới"}`
+            : activeItem.label
+        }
         shopId={shopId}
         onToggleMobileMenu={() => setMobile((m) => !m)}
       />
@@ -567,6 +577,16 @@ export default function SellerCenter() {
               featureName={activeItem.label}
               groupName={activeGroup.title}
             />
+          ) : isOrderDetail ? (
+            <SellerOrderDetailPage
+              shopId={Number(shopId) || 727720655}
+              orderSn={orderDetailSn}
+              onBack={() => {
+                const next = new URLSearchParams(params);
+                next.delete("order_sn");
+                setParams(next);
+              }}
+            />
           ) : isProductWorkflow ? (
             <AddProductPage
               shopId={Number(shopId) || 727720655}
@@ -575,7 +595,14 @@ export default function SellerCenter() {
               onSaved={(status) => closeProductWorkflow(status)}
             />
           ) : isOrdersTab ? (
-            <AllOrdersPage shopId={Number(shopId) || 727720655} />
+            <AllOrdersPage
+              shopId={Number(shopId) || 727720655}
+              onViewDetail={(sn) => {
+                const next = new URLSearchParams(params);
+                next.set("order_sn", sn);
+                setParams(next);
+              }}
+            />
           ) : isProductsTab ? (
             <ProductsPage shopId={Number(shopId) || 727720655} onCreateProduct={openProductWorkflow} onEditProduct={openProductWorkflow} />
           ) : isReturnsTab ? (
