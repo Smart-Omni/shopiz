@@ -37,6 +37,7 @@ import SellerHeader from "./SellerHeader";
 import SellerSidebar, { findActiveItem } from "./SellerSidebar";
 import SellerComingSoon from "./SellerComingSoon";
 import AllOrdersPage from "./orders/AllOrdersPage";
+import MassShipPage from "./orders/MassShipPage";
 import SellerOrderDetailPage from "./orders/SellerOrderDetailPage";
 import ProductsPage from "./products/ProductsPage";
 import AddProductPage from "./products/AddProductPage";
@@ -477,6 +478,10 @@ export default function SellerCenter() {
   const isOrderDetail = Boolean(orderDetailSn);
   const isOrdersTab =
     activeItem.id === "orders_all" || rawTab === "orders" || rawTab === "overview";
+  const isMassShipTab =
+    activeItem.id === "orders_mass_ship" ||
+    rawTab === "orders_mass_ship" ||
+    rawTab === "mass_ship";
   const isProductsTab =
     activeItem.id === "products_all" || rawTab === "products";
   const isCreateProductTab = activeItem.id === "products_new";
@@ -514,6 +519,7 @@ export default function SellerCenter() {
   const isImplemented =
     isOrderDetail ||
     isOrdersTab ||
+    isMassShipTab ||
     isProductsTab ||
     isCreateProductTab ||
     isReturnsTab ||
@@ -600,6 +606,20 @@ export default function SellerCenter() {
               onViewDetail={(sn) => {
                 const next = new URLSearchParams(params);
                 next.set("order_sn", sn);
+                setParams(next);
+              }}
+            />
+          ) : isMassShipTab ? (
+            <MassShipPage
+              shopId={Number(shopId) || 727720655}
+              onViewDetail={(sn) => {
+                const next = new URLSearchParams(params);
+                next.set("order_sn", sn);
+                setParams(next);
+              }}
+              onNavigateTab={(tab) => {
+                const next = new URLSearchParams(params);
+                next.set("tab", tab);
                 setParams(next);
               }}
             />

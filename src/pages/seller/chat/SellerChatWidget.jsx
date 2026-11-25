@@ -51,6 +51,15 @@ export default function SellerChatWidget({ shopId = 727720655, shopName = "Smart
       .catch(() => {
         setQuickMessages(DEFAULT_QUICK_REPLY_GROUPS[0].messages.slice(0, 8));
       });
+
+    const handleOpenChatEvent = (e) => {
+      setIsOpen(true);
+      if (e.detail?.buyerId) {
+        setSelectedBuyerId(e.detail.buyerId);
+      }
+    };
+    window.addEventListener("shopiz-open-seller-chat", handleOpenChatEvent);
+    return () => window.removeEventListener("shopiz-open-seller-chat", handleOpenChatEvent);
   }, [shopId]);
 
   // Load messages when selected buyer changes

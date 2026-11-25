@@ -6,13 +6,29 @@ export const sellerService = {
     return data.shops || [];
   },
 
-  async getOrders(shopId, status = "") {
+  async getOrders(shopId, filtersOrStatus = {}) {
+    const filters = typeof filtersOrStatus === "string" ? { status: filtersOrStatus } : (filtersOrStatus || {});
     const query = new URLSearchParams();
-    if (shopId) query.set("shop_id", shopId);
-    if (status && status !== "ALL" && status !== "all") query.set("status", status);
-    query.set("page_size", "50");
+    if (shopId) query.set("shop_id", String(shopId));
+    if (filters.status && filters.status !== "ALL" && filters.status !== "all") {
+      query.set("status", Array.isArray(filters.status) ? filters.status.join(",") : String(filters.status));
+    }
+    if (filters.subStatus) query.set("sub_status", String(filters.subStatus));
+    if (filters.carrier && filters.carrier !== "ALL") query.set("carrier", String(filters.carrier));
+    if (filters.keyword) query.set("keyword", String(filters.keyword).trim());
+    if (filters.searchType) query.set("search_type", String(filters.searchType));
+    if (filters.dateFrom) query.set("date_from", String(filters.dateFrom));
+    if (filters.dateTo) query.set("date_to", String(filters.dateTo));
+    if (filters.sortBy) query.set("sort_by", String(filters.sortBy));
+    query.set("page_size", String(filters.pageSize || "200"));
+
     const data = await api.get(`/simulator/orders?${query.toString()}`);
-    return data.orders || [];
+    const orders = data.orders || [];
+    orders.tab_counts = data.tab_counts || {};
+    orders.carrier_counts = data.carrier_counts || {};
+    orders.carrier_counts_ready = data.carrier_counts_ready || {};
+    orders.carrier_counts_processed = data.carrier_counts_processed || {};
+    return orders;
   },
 
   async getOrderDetail(orderSn) {
@@ -37,6 +53,37 @@ export const sellerService = {
 
   getAwbDownloadUrl(orderSn) {
     return `/api/v2/simulator/order/download_awb?order_sn=${encodeURIComponent(orderSn)}`;
+  },
+
+  async batchShipOrders(orderSnList, shippingType = "pickup", pickupTimeId = "", addressId = null) {
+    const data = await api.post("/simulator/order/batch_ship", {
+      order_sn_list: orderSnList,
+      shipping_type: shippingType,
+      pickup_time_id: pickupTimeId,
+      address_id: addressId,
+    });
+    return data;
+  },
+
+  async batchGenerateAwb(orderSnList, documentType = "shipping_label", printFormat = "thermal") {
+    const data = await api.post("/simulator/order/batch_generate_awb", {
+      order_sn_list: orderSnList,
+      document_type: documentType,
+      print_format: printFormat,
+    });
+    return data;
+  },
+
+  getBatchAwbDownloadUrl(orderSnList, documentType = "shipping_label", printFormat = "thermal") {
+    const sns = Array.isArray(orderSnList) ? orderSnList.join(",") : orderSnList;
+    return `/api/v2/simulator/order/batch_download_awb?order_sn_list=${encodeURIComponent(sns)}&doc_type=${encodeURIComponent(documentType)}&print_format=${encodeURIComponent(printFormat)}`;
+  },
+
+  getManifestDownloadUrl(orderSnList, carrier = "Shopee Xpress", shopId = null) {
+    const sns = Array.isArray(orderSnList) ? orderSnList.join(",") : orderSnList;
+    let url = `/api/v2/simulator/order/manifest?order_sn_list=${encodeURIComponent(sns)}&carrier=${encodeURIComponent(carrier)}`;
+    if (shopId) url += `&shop_id=${encodeURIComponent(shopId)}`;
+    return url;
   },
 
   async getReviewSummary(shopId, lastVisitAt) {
