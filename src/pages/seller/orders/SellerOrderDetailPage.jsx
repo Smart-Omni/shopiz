@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import sellerService from "../../../services/sellerService";
 import { getThumbnailUrl } from "../../../utils/imageUrl";
+import { formatPaymentMethod } from "../../../utils/paymentMethod";
 import s from "./SellerOrderDetailPage.module.css";
 
 const money = (n) =>
@@ -332,9 +333,7 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
             <div className={s.infoRow}>
               <span className={s.infoLabel}>Phương thức thanh toán:</span>
               <span className={s.infoVal}>
-                {order.payment_method === "cod" || order.payment_method === "Cash on delivery"
-                  ? "Thanh toán khi nhận hàng (COD)"
-                  : order.payment_method || "ShopeePay"}
+                {formatPaymentMethod(order.payment_method)}
               </span>
             </div>
           </div>
@@ -455,9 +454,7 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
           <div className={s.paymentMethodRow}>
             <span>Phương thức thanh toán:</span>
             <span>
-              {order.payment_method === "cod" || order.payment_method === "Cash on delivery"
-                ? "Thanh toán khi nhận hàng (COD)"
-                : order.payment_method || "ShopeePay"}
+              {formatPaymentMethod(order.payment_method)}
             </span>
           </div>
         </div>

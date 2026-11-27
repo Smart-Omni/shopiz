@@ -17,6 +17,7 @@ import {
 import sellerService from "../../services/sellerService";
 import { orderService } from "../../services/orderService";
 import { getThumbnailUrl } from "../../utils/imageUrl";
+import { formatPaymentMethod } from "../../utils/paymentMethod";
 import s from "./OrderDetailModal.module.css";
 
 const money = (n) =>
@@ -319,7 +320,7 @@ export default function OrderDetailModal({
                     </div>
                     <div className={s.infoRow}>
                       <span className={s.infoLabel}>Phương thức thanh toán:</span>
-                      <span className={s.infoVal}>{order.payment_method || "ShopeePay"}</span>
+                      <span className={s.infoVal}>{formatPaymentMethod(order.payment_method)}</span>
                     </div>
                   </div>
                 </div>

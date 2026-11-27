@@ -23,6 +23,7 @@ import {
 import sellerService from "../../../services/sellerService";
 import SellerPagination from "../SellerPagination";
 import { getThumbnailUrl } from "../../../utils/imageUrl";
+import { formatPaymentMethod } from "../../../utils/paymentMethod";
 import s from "./AllOrdersPage.module.css";
 
 const money = (n) =>
@@ -682,7 +683,7 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
                       {/* Tổng cộng */}
                       <td className={s.paymentCol}>
                         <span className={s.paymentAmount}>{money(order.total_amount)}</span>
-                        <span className={s.paymentMethod}>{order.payment_method || "Ví ShopeePay"}</span>
+                        <span className={s.paymentMethod}>{formatPaymentMethod(order.payment_method)}</span>
                       </td>
 
                       {/* Trạng thái */}
