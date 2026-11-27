@@ -62,6 +62,15 @@ const REASON_LABELS = {
   MISSING_ITEMS: "Thiếu phụ kiện / quà tặng",
 };
 
+const DISPUTE_REASON_OPTIONS = [
+  { id: 47, label: "Sản phẩm hoàn trả bị hư hỏng / đã qua sử dụng do Người mua" },
+  { id: 50, label: "Sản phẩm hoàn trả / khiếu nại của Người mua không đúng thực tế" },
+  { id: 48, label: "Sai lệch khối lượng / kích thước kiện hàng" },
+  { id: 51, label: "Từ chối khiếu nại chưa nhận được hàng (có bằng chứng giao thành công)" },
+  { id: 52, label: "Người bán chưa nhận được hàng hoàn từ đơn vị vận chuyển" },
+  { id: 49, label: "Lý do khác" },
+];
+
 export default function ReturnsPage({ shopId = 727720655 }) {
   const [params] = useSearchParams();
   const [returns, setReturns] = useState([]);
@@ -92,11 +101,16 @@ export default function ReturnsPage({ shopId = 727720655 }) {
 
   // Dispute Modal
   const [disputeModal, setDisputeModal] = useState(null); // return object
+  const [disputeReasonId, setDisputeReasonId] = useState(47);
   const [disputeReason, setDisputeReason] = useState("");
+  const [disputeFiles, setDisputeFiles] = useState([]);
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false);
 
   // Proof Modal
   const [proofModal, setProofModal] = useState(null); // return object
   const [proofComment, setProofComment] = useState("");
+  const [proofFiles, setProofFiles] = useState([]);
+  const [proofSubmitting, setProofSubmitting] = useState(false);
 
   const loadReturns = () => {
     setLoading(true);
@@ -209,39 +223,61 @@ export default function ReturnsPage({ shopId = 727720655 }) {
 
   // Seller submit dispute
   const handleSubmitDispute = async () => {
-    if (!disputeModal || !disputeReason) return;
+    if (!disputeModal || !disputeReason.trim() || disputeSubmitting) return;
+    setDisputeSubmitting(true);
     try {
-      await api.post("/simulator/returns/seller_dispute", {
-        return_sn: disputeModal.return_sn,
-        shop_id: shopId,
-        dispute_reason_id: 47,
-        dispute_text_reason: disputeReason,
+      const formData = new FormData();
+      formData.append("return_sn", disputeModal.return_sn);
+      formData.append("shop_id", String(shopId));
+      formData.append("dispute_reason_id", String(disputeReasonId));
+      formData.append("dispute_text_reason", disputeReason.trim());
+      disputeFiles.forEach((file) => {
+        formData.append("files", file);
+      });
+
+      await api.post("/simulator/returns/seller_dispute", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 120000,
       });
       setToastNotice(`Đã gửi khiếu nại thành công cho yêu cầu #${disputeModal.return_sn}`);
       setDisputeModal(null);
       setDisputeReason("");
+      setDisputeReasonId(47);
+      setDisputeFiles([]);
       loadReturns();
     } catch (err) {
       setToastNotice(err.message || "Gửi khiếu nại thất bại.");
+    } finally {
+      setDisputeSubmitting(false);
     }
   };
 
   // Seller upload proof
   const handleSubmitProof = async () => {
-    if (!proofModal) return;
+    if (!proofModal || (!proofComment.trim() && proofFiles.length === 0) || proofSubmitting) return;
+    setProofSubmitting(true);
     try {
-      await api.post("/simulator/returns/seller_upload_proof", {
-        return_sn: proofModal.return_sn,
-        shop_id: shopId,
-        comment: proofComment || "Bằng chứng người bán cung cấp",
-        image_url: "https://cf.shopee.vn/file/seller_evidence.jpg",
+      const formData = new FormData();
+      formData.append("return_sn", proofModal.return_sn);
+      formData.append("shop_id", String(shopId));
+      formData.append("comment", proofComment.trim() || "Bằng chứng người bán cung cấp");
+      proofFiles.forEach((file) => {
+        formData.append("files", file);
+      });
+
+      await api.post("/simulator/returns/seller_upload_proof", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 120000,
       });
       setToastNotice(`Đã tải lên bằng chứng thành công!`);
       setProofModal(null);
       setProofComment("");
+      setProofFiles([]);
       loadReturns();
     } catch (err) {
       setToastNotice(err.message || "Không thể tải lên bằng chứng.");
+    } finally {
+      setProofSubmitting(false);
     }
   };
 
@@ -640,14 +676,26 @@ export default function ReturnsPage({ shopId = 727720655 }) {
 
       {/* Dispute Modal */}
       {disputeModal && (
-        <div className={s.modalOverlay} onClick={() => setDisputeModal(null)}>
+        <div
+          className={s.modalOverlay}
+          onClick={() => {
+            if (!disputeSubmitting) {
+              setDisputeModal(null);
+              setDisputeFiles([]);
+            }
+          }}
+        >
           <div className={s.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={s.modalHeader}>
               <h3>Gửi khiếu nại tới Shopee</h3>
               <button
                 type="button"
                 className={s.modalClose}
-                onClick={() => setDisputeModal(null)}
+                disabled={disputeSubmitting}
+                onClick={() => {
+                  setDisputeModal(null);
+                  setDisputeFiles([]);
+                }}
               >
                 ×
               </button>
@@ -657,19 +705,77 @@ export default function ReturnsPage({ shopId = 727720655 }) {
                 Mã yêu cầu: <strong>{disputeModal.return_sn}</strong>
               </p>
               <label className={s.fieldLabel}>Lý do khiếu nại:</label>
+              <select
+                className={s.reasonSelect}
+                value={disputeReasonId}
+                onChange={(e) => setDisputeReasonId(Number(e.target.value))}
+                disabled={disputeSubmitting}
+              >
+                {DISPUTE_REASON_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              <label className={s.fieldLabel}>Mô tả chi tiết:</label>
               <textarea
                 className={s.disputeTextarea}
                 rows={4}
                 placeholder="Nêu rõ lý do từ chối yêu cầu và bằng chứng đóng gói của Shop..."
                 value={disputeReason}
                 onChange={(e) => setDisputeReason(e.target.value)}
+                disabled={disputeSubmitting}
               />
+              <label className={s.fieldLabel}>Hình ảnh / Video bằng chứng:</label>
+              <label className={s.uploadBox}>
+                <Upload size={16} />
+                <span>Chọn ảnh hoặc video (.jpg, .png, .mp4, .mov)</span>
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  hidden
+                  disabled={disputeSubmitting}
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.files || []);
+                    if (selected.length > 0) {
+                      setDisputeFiles((prev) => [...prev, ...selected]);
+                    }
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {disputeFiles.length > 0 && (
+                <div className={s.filePreviewList}>
+                  {disputeFiles.map((file, idx) => (
+                    <div key={`${file.name}-${idx}`} className={s.filePreviewItem}>
+                      <span className={s.fileName} title={file.name}>
+                        {file.name} ({Math.max(1, Math.round(file.size / 1024))} KB)
+                      </span>
+                      <button
+                        type="button"
+                        className={s.fileRemoveBtn}
+                        disabled={disputeSubmitting}
+                        onClick={() =>
+                          setDisputeFiles((prev) => prev.filter((_, i) => i !== idx))
+                        }
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className={s.modalFooter}>
               <button
                 type="button"
                 className={s.btnCancel}
-                onClick={() => setDisputeModal(null)}
+                disabled={disputeSubmitting}
+                onClick={() => {
+                  setDisputeModal(null);
+                  setDisputeFiles([]);
+                }}
               >
                 Hủy
               </button>
@@ -677,9 +783,9 @@ export default function ReturnsPage({ shopId = 727720655 }) {
                 type="button"
                 className={s.btnConfirm}
                 onClick={handleSubmitDispute}
-                disabled={!disputeReason.trim()}
+                disabled={!disputeReason.trim() || disputeSubmitting}
               >
-                Gửi khiếu nại
+                {disputeSubmitting ? "Đang gửi..." : "Gửi khiếu nại"}
               </button>
             </div>
           </div>
@@ -688,14 +794,26 @@ export default function ReturnsPage({ shopId = 727720655 }) {
 
       {/* Proof Modal */}
       {proofModal && (
-        <div className={s.modalOverlay} onClick={() => setProofModal(null)}>
+        <div
+          className={s.modalOverlay}
+          onClick={() => {
+            if (!proofSubmitting) {
+              setProofModal(null);
+              setProofFiles([]);
+            }
+          }}
+        >
           <div className={s.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={s.modalHeader}>
               <h3>Cung cấp bằng chứng bổ sung</h3>
               <button
                 type="button"
                 className={s.modalClose}
-                onClick={() => setProofModal(null)}
+                disabled={proofSubmitting}
+                onClick={() => {
+                  setProofModal(null);
+                  setProofFiles([]);
+                }}
               >
                 ×
               </button>
@@ -711,18 +829,68 @@ export default function ReturnsPage({ shopId = 727720655 }) {
                 placeholder="Ảnh đóng hàng nguyên vẹn, video quay gửi bưu tá..."
                 value={proofComment}
                 onChange={(e) => setProofComment(e.target.value)}
+                disabled={proofSubmitting}
               />
+              <label className={s.fieldLabel}>Tải lên hình ảnh / video bằng chứng:</label>
+              <label className={s.uploadBox}>
+                <Upload size={16} />
+                <span>Chọn ảnh hoặc video (.jpg, .png, .mp4, .mov)</span>
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  hidden
+                  disabled={proofSubmitting}
+                  onChange={(e) => {
+                    const selected = Array.from(e.target.files || []);
+                    if (selected.length > 0) {
+                      setProofFiles((prev) => [...prev, ...selected]);
+                    }
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {proofFiles.length > 0 && (
+                <div className={s.filePreviewList}>
+                  {proofFiles.map((file, idx) => (
+                    <div key={`${file.name}-${idx}`} className={s.filePreviewItem}>
+                      <span className={s.fileName} title={file.name}>
+                        {file.name} ({Math.max(1, Math.round(file.size / 1024))} KB)
+                      </span>
+                      <button
+                        type="button"
+                        className={s.fileRemoveBtn}
+                        disabled={proofSubmitting}
+                        onClick={() =>
+                          setProofFiles((prev) => prev.filter((_, i) => i !== idx))
+                        }
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className={s.modalFooter}>
               <button
                 type="button"
                 className={s.btnCancel}
-                onClick={() => setProofModal(null)}
+                disabled={proofSubmitting}
+                onClick={() => {
+                  setProofModal(null);
+                  setProofFiles([]);
+                }}
               >
                 Hủy
               </button>
-              <button type="button" className={s.btnConfirm} onClick={handleSubmitProof}>
-                Tải lên
+              <button
+                type="button"
+                className={s.btnConfirm}
+                onClick={handleSubmitProof}
+                disabled={(!proofComment.trim() && proofFiles.length === 0) || proofSubmitting}
+              >
+                {proofSubmitting ? "Đang tải lên..." : "Tải lên"}
               </button>
             </div>
           </div>

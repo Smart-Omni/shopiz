@@ -669,6 +669,80 @@
   outline: none;
 }
 
+.reasonSelect {
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 13px;
+  outline: none;
+  background: #ffffff;
+  color: #333333;
+}
+
+.reasonSelect:focus {
+  border-color: #ee4d2d;
+}
+
+.uploadBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 4px;
+  padding: 12px;
+  font-size: 13px;
+  color: #595959;
+  background: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.uploadBox:hover {
+  border-color: #ee4d2d;
+  color: #ee4d2d;
+}
+
+.filePreviewList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.filePreviewItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #333333;
+}
+
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileRemoveBtn {
+  background: transparent;
+  border: 0;
+  color: #8c8c8c;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.fileRemoveBtn:hover {
+  color: #ff4d4f;
+}
+
 .modalFooter {
   display: flex;
   justify-content: flex-end;
