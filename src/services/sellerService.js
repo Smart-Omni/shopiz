@@ -51,6 +51,14 @@ export const sellerService = {
     return data;
   },
 
+  async handleCancellation(orderSn, operation) {
+    const data = await api.post("/simulator/order/handle_cancellation", {
+      order_sn: orderSn,
+      operation,
+    });
+    return data;
+  },
+
   async generateAwb(orderSn) {
     const data = await api.post("/simulator/order/generate_awb", {
       order_sn: orderSn,

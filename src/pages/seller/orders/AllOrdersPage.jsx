@@ -40,7 +40,7 @@ const STATUS_TABS = [
   { id: "to_ship", label: "Chờ lấy hàng", backendStatuses: ["READY_TO_SHIP", "PROCESSED"], hasSubTabs: true },
   { id: "shipping", label: "Đang giao", backendStatuses: ["SHIPPED", "TO_CONFIRM_RECEIVE"] },
   { id: "completed", label: "Đã giao", backendStatuses: ["COMPLETED"] },
-  { id: "cancelled", label: "Đơn Huỷ", backendStatuses: ["CANCELLED", "IN_CANCEL"] },
+  { id: "cancelled", label: "Đơn Huỷ", backendStatuses: ["CANCELLED", "IN_CANCEL"], hasSubTabs: true },
   { id: "returns", label: "Trả hàng/Hoàn tiền", backendStatuses: ["TO_RETURN"] },
   { id: "failed_delivery", label: "Giao không thành công", backendStatuses: ["DELIVERY_FAILED"] },
 ];
@@ -50,6 +50,13 @@ const TO_SHIP_SUBTABS = [
   { id: "all", label: "Tất cả" },
   { id: "unprocessed", label: "Chưa xử lý", backendStatuses: ["READY_TO_SHIP"] },
   { id: "processed", label: "Đã xử lý", backendStatuses: ["PROCESSED"] },
+];
+
+// Sub-tabs for "Đơn Huỷ"
+const CANCELLED_SUBTABS = [
+  { id: "all", label: "Tất cả" },
+  { id: "negotiate", label: "Thương lượng với Người mua", backendStatuses: ["IN_CANCEL"] },
+  { id: "done", label: "Đã hủy", backendStatuses: ["CANCELLED"] },
 ];
 
 const STATUS_DISPLAY_MAP = {
@@ -222,9 +229,15 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
         if (!tab.backendStatuses.includes(o.order_status)) return false;
       }
 
-      // 1.1 Sub-tab filter (for to_ship)
+      // 1.1 Sub-tab filter (for to_ship & cancelled)
       if (activeTabId === "to_ship" && activeSubTab !== "all") {
         const sub = TO_SHIP_SUBTABS.find((s) => s.id === activeSubTab);
+        if (sub && sub.backendStatuses && !sub.backendStatuses.includes(o.order_status)) {
+          return false;
+        }
+      }
+      if (activeTabId === "cancelled" && activeSubTab !== "all") {
+        const sub = CANCELLED_SUBTABS.find((s) => s.id === activeSubTab);
         if (sub && sub.backendStatuses && !sub.backendStatuses.includes(o.order_status)) {
           return false;
         }
@@ -253,8 +266,18 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
       return true;
     });
 
-    // Sort order
-    if (sortBy === "created_asc") {
+    // Sort order: in "Đơn Huỷ", prioritize urgent IN_CANCEL requests closest to 24h deadline
+    if (activeTabId === "cancelled") {
+      result.sort((a, b) => {
+        const aInCancel = a.order_status === "IN_CANCEL" ? 0 : 1;
+        const bInCancel = b.order_status === "IN_CANCEL" ? 0 : 1;
+        if (aInCancel !== bInCancel) return aInCancel - bInCancel;
+        if (aInCancel === 0) {
+          return (a.cancel_respond_by || 9999999999) - (b.cancel_respond_by || 9999999999);
+        }
+        return b.create_time - a.create_time;
+      });
+    } else if (sortBy === "created_asc") {
       result.sort((a, b) => a.create_time - b.create_time);
     } else if (sortBy === "deadline_asc") {
       result.sort((a, b) => (a.ship_by_date || 9999999999) - (b.ship_by_date || 9999999999));
@@ -283,6 +306,11 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
     counts["to_ship_all"] = counts["to_ship"] || 0;
     counts["to_ship_unprocessed"] = orders.filter((o) => o.order_status === "READY_TO_SHIP").length;
     counts["to_ship_processed"] = orders.filter((o) => o.order_status === "PROCESSED").length;
+
+    // Sub-tab counts for cancelled
+    counts["cancelled_all"] = counts["cancelled"] || 0;
+    counts["cancelled_negotiate"] = orders.filter((o) => o.order_status === "IN_CANCEL").length;
+    counts["cancelled_done"] = orders.filter((o) => o.order_status === "CANCELLED").length;
 
     return counts;
   }, [orders]);
@@ -356,6 +384,35 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
       );
     } catch (err) {
       setActionNotice(err.message || `Bàn giao đơn #${orderSn} thất bại.`);
+    }
+  };
+
+  // Seller responds to buyer cancellation request (ACCEPT | REJECT)
+  const handleCancellationDecision = async (orderSn, operation) => {
+    try {
+      const res = await sellerService.handleCancellation(orderSn, operation);
+      const nextStatus = res?.order_status || (operation === "ACCEPT" ? "CANCELLED" : "PROCESSED");
+      setActionNotice(
+        operation === "ACCEPT"
+          ? `Đã đồng ý hủy đơn #${orderSn}.`
+          : `Đã từ chối yêu cầu hủy đơn #${orderSn} — đơn tiếp tục chờ lấy hàng.`
+      );
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.order_sn === orderSn
+            ? {
+                ...o,
+                order_status: nextStatus,
+                cancel_respond_by: null,
+                ...(operation === "ACCEPT"
+                  ? { cancel_by: "BUYER", cancel_reason: o.buyer_cancel_reason || "Người bán đồng ý hủy đơn" }
+                  : {}),
+              }
+            : o,
+        ),
+      );
+    } catch (err) {
+      setActionNotice(err.message || `Không thể xử lý yêu cầu hủy cho đơn #${orderSn}.`);
     }
   };
 
@@ -500,17 +557,23 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
           </form>
         </div>
 
-        {/* 3. Sub-tabs (Secondary level) when tab is "Chờ lấy hàng" */}
-        {activeTabId === "to_ship" && (
+        {/* 3. Sub-tabs (Secondary level) when tab is "Chờ lấy hàng" or "Đơn Huỷ" */}
+        {(activeTabId === "to_ship" || activeTabId === "cancelled") && (
           <div className={s.subTabsRow}>
-            {TO_SHIP_SUBTABS.map((sub) => {
+            {(activeTabId === "to_ship" ? TO_SHIP_SUBTABS : CANCELLED_SUBTABS).map((sub) => {
               const isSubActive = activeSubTab === sub.id;
               const subCount =
-                sub.id === "all"
-                  ? tabCounts["to_ship_all"]
-                  : sub.id === "unprocessed"
-                    ? tabCounts["to_ship_unprocessed"]
-                    : tabCounts["to_ship_processed"];
+                activeTabId === "to_ship"
+                  ? sub.id === "all"
+                    ? tabCounts["to_ship_all"]
+                    : sub.id === "unprocessed"
+                      ? tabCounts["to_ship_unprocessed"]
+                      : tabCounts["to_ship_processed"]
+                  : sub.id === "all"
+                    ? tabCounts["cancelled_all"]
+                    : sub.id === "negotiate"
+                      ? tabCounts["cancelled_negotiate"]
+                      : tabCounts["cancelled_done"];
               return (
                 <button
                   key={sub.id}
@@ -725,6 +788,11 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
                           {slaWarning && (
                             <p className={s.slaWarningText}>{slaWarning}</p>
                           )}
+                          {order.order_status === "IN_CANCEL" && (
+                            <p className={s.statusSubNote}>
+                              Lý do: {order.buyer_cancel_reason || "Người mua yêu cầu hủy"}
+                            </p>
+                          )}
                           {order.order_status === "CANCELLED" && (
                             <p className={s.statusSubNote}>
                               {order.cancel_reason || "Đã hủy bởi người mua"}
@@ -743,7 +811,15 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
 
                       {/* Đếm ngược */}
                       <td className={s.countdownCol}>
-                        {["READY_TO_SHIP", "UNPAID"].includes(order.order_status) && order.ship_by_date ? (
+                        {order.order_status === "IN_CANCEL" && order.cancel_respond_by ? (
+                          <span
+                            className={s.countdownText}
+                            style={{ color: "#ee4d2d", fontWeight: 600 }}
+                            title="Phản hồi trước 24h kể từ khi Người mua gửi yêu cầu hủy"
+                          >
+                            {formatCountdown(order.cancel_respond_by)}
+                          </span>
+                        ) : ["READY_TO_SHIP", "UNPAID"].includes(order.order_status) && order.ship_by_date ? (
                           <span className={s.countdownText}>
                             {formatCountdown(order.ship_by_date)}
                           </span>
@@ -767,6 +843,27 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
                       {/* Thao tác (Link style) */}
                       <td className={s.actionCol}>
                         <div className={s.actionLinks}>
+                          {order.order_status === "IN_CANCEL" ? (
+                            <>
+                              <button
+                                type="button"
+                                className={s.actionLinkBlue}
+                                style={{ color: "#52c41a" }}
+                                onClick={() => handleCancellationDecision(order.order_sn, "ACCEPT")}
+                              >
+                                Đồng ý
+                              </button>
+                              <button
+                                type="button"
+                                className={s.actionLinkBlue}
+                                style={{ color: "#ee4d2d" }}
+                                onClick={() => handleCancellationDecision(order.order_sn, "REJECT")}
+                              >
+                                Từ chối
+                              </button>
+                            </>
+                          ) : null}
+
                           {order.order_status === "READY_TO_SHIP" || order.order_status === "UNPAID" ? (
                             <button
                               type="button"

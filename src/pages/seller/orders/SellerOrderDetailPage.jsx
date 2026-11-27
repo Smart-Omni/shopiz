@@ -102,6 +102,20 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
     }
   };
 
+  const handleCancellationDecision = async (operation) => {
+    try {
+      await sellerService.handleCancellation(orderSn, operation);
+      setActionNotice(
+        operation === "ACCEPT"
+          ? `Đã đồng ý hủy đơn #${orderSn}.`
+          : `Đã từ chối yêu cầu hủy đơn #${orderSn}.`
+      );
+      fetchOrderDetail();
+    } catch (err) {
+      setActionNotice(err.message || "Không thể xử lý yêu cầu hủy.");
+    }
+  };
+
   const handlePrintAwb = async () => {
     try {
       await sellerService.generateAwb(orderSn);
@@ -221,6 +235,25 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
           >
             {statusMeta.text}
           </span>
+
+          {order.order_status === "IN_CANCEL" ? (
+            <>
+              <button
+                type="button"
+                className={s.btnPrimary}
+                onClick={() => handleCancellationDecision("ACCEPT")}
+              >
+                Đồng ý hủy
+              </button>
+              <button
+                type="button"
+                className={s.btnAwb}
+                onClick={() => handleCancellationDecision("REJECT")}
+              >
+                Từ chối hủy
+              </button>
+            </>
+          ) : null}
 
           {order.order_status === "UNPAID" || order.order_status === "READY_TO_SHIP" ? (
             <button

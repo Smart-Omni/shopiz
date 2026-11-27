@@ -415,7 +415,9 @@ export default function PurchasesPage() {
                   </p>
                   <div className={s.actions}>
                     <span>
-                      {orderStatus(order) === "cancelled"
+                      {order.backendStatus === "IN_CANCEL"
+                        ? "Đang chờ Người bán phản hồi yêu cầu hủy (tối đa 24h)"
+                        : orderStatus(order) === "cancelled"
                         ? order.isSample
                           ? "Đã hủy trong lịch sử mẫu"
                           : "Đã hủy bởi bạn"
@@ -480,6 +482,19 @@ export default function PurchasesPage() {
                           }
                         >
                           View Cancellation Details
+                        </button>
+                        <button
+                          onClick={() =>
+                            contactSeller(groups[0].shop, order)
+                          }
+                        >
+                          Contact Seller
+                        </button>
+                      </>
+                    ) : order.backendStatus === "IN_CANCEL" ? (
+                      <>
+                        <button className={s.pending} disabled>
+                          Chờ Người bán duyệt hủy
                         </button>
                         <button
                           onClick={() =>
