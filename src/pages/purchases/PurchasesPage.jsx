@@ -90,6 +90,8 @@ export default function PurchasesPage() {
       hasReviewed: o.has_reviewed,
       hasReturn: o.has_return,
       returnStatus: o.return_status,
+      activeReturn: o.returns?.[0] || null,
+      completedAt: o.completed_at || null,
       isBackend: true,
     };
   }
@@ -150,7 +152,9 @@ export default function PurchasesPage() {
       const formData = new FormData();
       formData.append("order_sn", orderSn);
       formData.append("reason", value.reason);
+      formData.append("solution", value.solution || "RETURN_REFUND");
       formData.append("refund_amount", String(popup.order.total));
+      formData.append("text_reason", value.description || "");
       formData.append("description", value.description || "");
       if (value.files?.length) {
         value.files.forEach((file) => formData.append("files", file));
@@ -158,10 +162,10 @@ export default function PurchasesPage() {
       try {
         await orderService.requestReturn(formData);
         setPopup(null);
-        setFeedback("Return and refund request submitted successfully to Shopee.");
+        setFeedback("Yêu cầu Trả hàng/Hoàn tiền đã được gửi tới Shopee.");
         loadBackendOrders();
       } catch (err) {
-        setFeedback(`Return request failed: ${err.message}`);
+        setFeedback(`Gửi yêu cầu Trả hàng/Hoàn tiền thất bại: ${err.message}`);
       }
       return;
     }
@@ -442,6 +446,50 @@ export default function PurchasesPage() {
                         </button>
                         <button onClick={() => buyAgain(order)}>
                           Mua Lại
+                        </button>
+                      </>
+                    ) : orderStatus(order) === "returns" && order.activeReturn ? (
+                      <>
+                        {order.activeReturn.negotiation_status === "PENDING_BUYER_RESPOND" &&
+                          order.activeReturn.offer_amount && (
+                          <button
+                            className={s.primary}
+                            onClick={async () => {
+                              try {
+                                await orderService.acceptReturnOffer(order.activeReturn.return_sn);
+                                setNotice(`Đã đồng ý đề xuất hoàn ${money(order.activeReturn.offer_amount)}!`);
+                                loadBackendOrders();
+                              } catch (err) {
+                                setNotice(`Lỗi chấp nhận đề xuất: ${err.message}`);
+                              }
+                            }}
+                          >
+                            Đồng ý hoàn {money(order.activeReturn.offer_amount)}
+                          </button>
+                        )}
+                        {order.activeReturn.status === "PROCESSING" &&
+                          order.activeReturn.needs_logistics && (
+                          <button
+                            className={s.primary}
+                            onClick={async () => {
+                              try {
+                                await orderService.shipReturn(order.activeReturn.return_sn);
+                                setNotice("Đã xác nhận gửi trả hàng cho ĐVVC!");
+                                loadBackendOrders();
+                              } catch (err) {
+                                setNotice(`Lỗi gửi trả hàng: ${err.message}`);
+                              }
+                            }}
+                          >
+                            Gửi trả hàng (6 ngày)
+                          </button>
+                        )}
+                        <button
+                          onClick={() =>
+                            contactSeller(groups[0].shop, order)
+                          }
+                        >
+                          Contact Seller
                         </button>
                       </>
                     ) : orderStatus(order) === "completed" ? (

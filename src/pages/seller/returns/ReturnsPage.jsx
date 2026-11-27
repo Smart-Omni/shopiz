@@ -54,13 +54,32 @@ const STATUS_MAP = {
 };
 
 const REASON_LABELS = {
-  DAMAGED_FAULTY: "Hàng bị hư hỏng / bể vỡ",
+  DAMAGED_FAULTY: "Hàng bị hư hỏng / bể vỡ / sai hàng",
   NOT_RECEIVED: "Chưa nhận được hàng",
   CHANGE_OF_MIND: "Đổi ý, không có nhu cầu",
   WRONG_ITEM: "Giao sai sản phẩm / phân loại",
   COUNTERFEIT: "Nghi ngờ hàng giả / nhái",
   MISSING_ITEMS: "Thiếu phụ kiện / quà tặng",
 };
+
+function formatDisputeCountdown(tsSeconds) {
+  if (!tsSeconds) return null;
+  const diff = tsSeconds - Math.floor(Date.now() / 1000);
+  if (diff <= 0) return "Đã hết hạn khiếu nại (2 ngày)";
+  const hours = Math.floor(diff / 3600);
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  return days > 0 ? `Hạn khiếu nại: Còn ${days} ngày ${remHours} giờ` : `Hạn khiếu nại: Còn ${hours} giờ`;
+}
+
+function formatShortDate(tsSeconds) {
+  if (!tsSeconds) return "";
+  return new Date(tsSeconds * 1000).toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
 
 const DISPUTE_REASON_OPTIONS = [
   { id: 47, label: "Sản phẩm hoàn trả bị hư hỏng / đã qua sử dụng do Người mua" },
@@ -111,6 +130,12 @@ export default function ReturnsPage({ shopId = 727720655 }) {
   const [proofComment, setProofComment] = useState("");
   const [proofFiles, setProofFiles] = useState([]);
   const [proofSubmitting, setProofSubmitting] = useState(false);
+
+  // Partial Refund Offer Modal
+  const [offerModal, setOfferModal] = useState(null);
+  const [offerAmount, setOfferAmount] = useState("");
+  const [offerReason, setOfferReason] = useState("");
+  const [offerSubmitting, setOfferSubmitting] = useState(false);
 
   const loadReturns = () => {
     setLoading(true);
@@ -278,6 +303,33 @@ export default function ReturnsPage({ shopId = 727720655 }) {
       setToastNotice(err.message || "Không thể tải lên bằng chứng.");
     } finally {
       setProofSubmitting(false);
+    }
+  };
+
+  // Seller submit partial refund counter-offer
+  const handleSubmitOffer = async () => {
+    if (!offerModal || !offerAmount || offerSubmitting) return;
+    const amountNum = Number(offerAmount);
+    if (isNaN(amountNum) || amountNum <= 0 || amountNum > Number(offerModal.refund_amount)) {
+      setToastNotice(`Số tiền đề xuất phải > 0 và <= ${money(offerModal.refund_amount)}`);
+      return;
+    }
+    setOfferSubmitting(true);
+    try {
+      await api.post("/simulator/returns/seller_offer", {
+        return_sn: offerModal.return_sn,
+        offer_amount: amountNum,
+        offer_reason: offerReason.trim() || "Người bán đề xuất hoàn tiền một phần",
+      });
+      setToastNotice(`Đã gửi đề xuất hoàn ${money(amountNum)} cho yêu cầu #${offerModal.return_sn}`);
+      setOfferModal(null);
+      setOfferAmount("");
+      setOfferReason("");
+      loadReturns();
+    } catch (err) {
+      setToastNotice(err.message || "Không thể gửi đề xuất hoàn tiền.");
+    } finally {
+      setOfferSubmitting(false);
     }
   };
 
@@ -567,7 +619,24 @@ export default function ReturnsPage({ shopId = 727720655 }) {
                     {/* Lý do */}
                     <td className={s.reasonCell}>
                       <span className={s.reasonTitle}>{reasonText}</span>
-                      {r.textReason && <p className={s.reasonDetail}>{r.textReason}</p>}
+                      {(r.is_nfr_exempt || r.reason === "CHANGE_OF_MIND") && (
+                        <span
+                          style={{
+                            display: "inline-block",
+                            marginTop: 4,
+                            padding: "2px 6px",
+                            fontSize: 10,
+                            fontWeight: 600,
+                            color: "#047857",
+                            background: "#ecfdf5",
+                            border: "1px solid #a7f3d0",
+                            borderRadius: 4,
+                          }}
+                        >
+                          Không tính NFR
+                        </span>
+                      )}
+                      {r.text_reason && <p className={s.reasonDetail}>{r.text_reason}</p>}
                     </td>
 
                     {/* Lý do điều chỉnh bởi Shopee */}
@@ -596,6 +665,21 @@ export default function ReturnsPage({ shopId = 727720655 }) {
                       >
                         {statusMeta.label}
                       </span>
+                      {r.status === "PROCESSING" && r.needs_logistics && !r.reverse_delivered_at && (
+                        <div style={{ fontSize: 11, color: "#595959", marginTop: 4, lineHeight: 1.35 }}>
+                          Người mua đang trả hàng.
+                          {r.expected_return_date
+                            ? ` Dự kiến nhận: ${formatShortDate(r.expected_return_date)}`
+                            : r.buyer_return_due_date
+                              ? ` Hạn gửi: ${formatShortDate(r.buyer_return_due_date)}`
+                              : ""}
+                        </div>
+                      )}
+                      {r.dispute_due_date && (
+                        <div style={{ fontSize: 11, color: "#cf1322", marginTop: 4, fontWeight: 500 }}>
+                          {formatDisputeCountdown(r.dispute_due_date)}
+                        </div>
+                      )}
                     </td>
 
                     {/* Vận chuyển */}
@@ -623,15 +707,48 @@ export default function ReturnsPage({ shopId = 727720655 }) {
                           </button>
                         )}
 
-                        {r.status === "REQUESTED" && (
+                        {(r.status === "REQUESTED" || r.status === "PROCESSING") &&
+                          r.negotiation_status !== "PENDING_BUYER_RESPOND" && (
                           <button
                             type="button"
-                            className={s.btnDisputeAction}
-                            onClick={() => setDisputeModal(r)}
+                            className={s.btnProofAction}
+                            onClick={() => {
+                              setOfferModal(r);
+                              setOfferAmount(String(Math.round(Number(r.refund_amount || 0) * 0.5)));
+                              setOfferReason("");
+                            }}
                           >
-                            Khiếu nại
+                            Đề xuất hoàn tiền
                           </button>
                         )}
+
+                        {(() => {
+                          const nowSec = Math.floor(Date.now() / 1000);
+                          const withinDisputeWindow = !r.dispute_due_date || nowSec <= r.dispute_due_date;
+                          const canDisputeRequested = r.status === "REQUESTED";
+                          const canDisputeInstantRefund =
+                            r.status === "ACCEPTED" &&
+                            r.solution === "REFUND" &&
+                            r.compensation_status === "COMPENSATION_NOT_APPLICABLE" &&
+                            withinDisputeWindow;
+                          const canDisputeReturnParcel =
+                            r.status === "PROCESSING" &&
+                            (Boolean(r.reverse_delivered_at) ||
+                              (Boolean(r.expected_return_date) && nowSec >= r.expected_return_date)) &&
+                            withinDisputeWindow;
+                          if (!canDisputeRequested && !canDisputeInstantRefund && !canDisputeReturnParcel) {
+                            return null;
+                          }
+                          return (
+                            <button
+                              type="button"
+                              className={s.btnDisputeAction}
+                              onClick={() => setDisputeModal(r)}
+                            >
+                              Khiếu nại
+                            </button>
+                          );
+                        })()}
 
                         {r.status === "SELLER_DISPUTE" && r.seller_proof_status !== "UPLOADED" && (
                           <button
@@ -891,6 +1008,72 @@ export default function ReturnsPage({ shopId = 727720655 }) {
                 disabled={(!proofComment.trim() && proofFiles.length === 0) || proofSubmitting}
               >
                 {proofSubmitting ? "Đang tải lên..." : "Tải lên"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Partial Refund Offer Modal */}
+      {offerModal && (
+        <div
+          className={s.modalOverlay}
+          onClick={() => {
+            if (!offerSubmitting) setOfferModal(null);
+          }}
+        >
+          <div className={s.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={s.modalHeader}>
+              <h3>Đề xuất hoàn tiền một phần</h3>
+              <button
+                type="button"
+                className={s.modalClose}
+                disabled={offerSubmitting}
+                onClick={() => setOfferModal(null)}
+              >
+                ×
+              </button>
+            </div>
+            <div className={s.modalBody}>
+              <p>
+                Yêu cầu: <strong>{offerModal.return_sn}</strong> (Tối đa: {money(offerModal.refund_amount)})
+              </p>
+              <label className={s.fieldLabel}>Số tiền đề xuất hoàn (VND):</label>
+              <input
+                type="number"
+                className={s.proofInput}
+                min={1}
+                max={Number(offerModal.refund_amount || 0)}
+                value={offerAmount}
+                onChange={(e) => setOfferAmount(e.target.value)}
+                disabled={offerSubmitting}
+              />
+              <label className={s.fieldLabel}>Lý do / Ghi chú thương lượng:</label>
+              <textarea
+                className={s.disputeTextarea}
+                rows={3}
+                placeholder="Đề xuất hoàn tiền một phần không cần trả hàng..."
+                value={offerReason}
+                onChange={(e) => setOfferReason(e.target.value)}
+                disabled={offerSubmitting}
+              />
+            </div>
+            <div className={s.modalFooter}>
+              <button
+                type="button"
+                className={s.btnCancel}
+                disabled={offerSubmitting}
+                onClick={() => setOfferModal(null)}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                className={s.btnConfirm}
+                onClick={handleSubmitOffer}
+                disabled={!offerAmount || offerSubmitting}
+              >
+                {offerSubmitting ? "Đang gửi..." : "Gửi đề xuất"}
               </button>
             </div>
           </div>

@@ -39,7 +39,7 @@ export default function ArbitrationTab({ returns = [], summary = {}, onRefresh, 
   const [loadingAction, setLoadingAction] = useState(false);
 
   // Form states
-  const [reviewAction, setReviewAction] = useState("APPROVE");
+  const [reviewAction, setReviewAction] = useState("APPROVE_RETURN_REFUND");
   const [reviewReason, setReviewReason] = useState("");
   const [inboundResult, setInboundResult] = useState("PASS");
   const [inboundNotes, setInboundNotes] = useState("");
@@ -54,9 +54,22 @@ export default function ArbitrationTab({ returns = [], summary = {}, onRefresh, 
   });
 
   const handleOpenReview = (item) => {
-    setReviewAction("APPROVE");
+    setReviewAction("APPROVE_RETURN_REFUND");
     setReviewReason("");
     setActiveModal({ type: "review", item });
+  };
+
+  const handleReverseDeliver = async (item) => {
+    setLoadingAction(true);
+    try {
+      await adminService.reverseDeliverReturn(item.return_sn);
+      showToast(`ĐVVC đã giao hàng hoàn cho Shop (${item.return_sn}) — Mở 2 ngày khiếu nại`);
+      onRefresh?.();
+    } catch (err) {
+      showToast(err.message || "Lỗi mô phỏng giao hàng hoàn", "error");
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
   const handleOpenInbound = (item) => {
@@ -77,7 +90,7 @@ export default function ArbitrationTab({ returns = [], summary = {}, onRefresh, 
     setLoadingAction(true);
     try {
       await adminService.reviewReturn(activeModal.item.return_sn, reviewAction, reviewReason);
-      showToast(reviewAction === "APPROVE" ? "Đã phê duyệt yêu cầu trả hàng" : "Đã từ chối yêu cầu trả hàng");
+      showToast(reviewAction === "REJECT" ? "Đã từ chối yêu cầu trả hàng" : "Đã cập nhật quyết định xét duyệt CS");
       setActiveModal(null);
       onRefresh?.();
     } catch (err) {
@@ -262,18 +275,32 @@ export default function ArbitrationTab({ returns = [], summary = {}, onRefresh, 
                       )}
 
                       {r.status === "PROCESSING" && (
-                        <button
-                          type="button"
-                          className={s.btnSuccess}
-                          onClick={() => handleOpenInbound(r)}
-                          title="Nghiệm thu bưu phẩm kho"
-                        >
-                          <PackageCheck size={12} style={{ display: "inline", marginRight: 4 }} />
-                          Kho nhận
-                        </button>
+                        <>
+                          {!r.reverse_delivered_at && (
+                            <button
+                              type="button"
+                              className={s.btnPrimary}
+                              disabled={loadingAction}
+                              onClick={() => handleReverseDeliver(r)}
+                              title="Mô phỏng ĐVVC giao hàng hoàn về cho Shop (bắt đầu 2 ngày khiếu nại)"
+                            >
+                              ĐVVC Giao hoàn
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={s.btnSuccess}
+                            onClick={() => handleOpenInbound(r)}
+                            title="Nghiệm thu bưu phẩm kho"
+                          >
+                            <PackageCheck size={12} style={{ display: "inline", marginRight: 4 }} />
+                            Kho nhận
+                          </button>
+                        </>
                       )}
 
-                      {r.status === "SELLER_DISPUTE" && (
+                      {(r.status === "SELLER_DISPUTE" ||
+                        (r.status === "ACCEPTED" && r.compensation_status === "COMPENSATION_REQUESTED")) && (
                         <button
                           type="button"
                           className={s.btnDispute}
@@ -421,7 +448,9 @@ export default function ArbitrationTab({ returns = [], summary = {}, onRefresh, 
                   value={reviewAction}
                   onChange={(e) => setReviewAction(e.target.value)}
                 >
-                  <option value="APPROVE">Chấp thuận yêu cầu trả hàng (APPROVE)</option>
+                  <option value="APPROVE_RETURN_REFUND">Trả hàng &amp; Hoàn tiền (6 ngày gửi trả)</option>
+                  <option value="APPROVE_REFUND_ONLY">Hoàn tiền ngay — Không trả hàng (2 ngày khiếu nại)</option>
+                  <option value="REQUEST_SELLER_PROOF">Yêu cầu Shop cung cấp bằng chứng</option>
                   <option value="REJECT">Bác bỏ yêu cầu trả hàng (REJECT)</option>
                 </select>
               </div>
@@ -515,7 +544,8 @@ export default function ArbitrationTab({ returns = [], summary = {}, onRefresh, 
                   onChange={(e) => setVerdict(e.target.value)}
                 >
                   <option value="BUYER_WIN">Người Mua Thắng (BUYER_WIN - Hoàn lại tiền cho khách hàng)</option>
-                  <option value="SELLER_WIN">Người Bán Thắng (SELLER_WIN - Giải ngân đơn hàng & bồi thường shop)</option>
+                  <option value="SELLER_WIN">Người Bán Thắng (SELLER_WIN - Giải ngân đơn hàng cho shop)</option>
+                  <option value="PLATFORM_COMPENSATE">Shopee Đền Bù (PLATFORM_COMPENSATE - Hoàn tiền khách &amp; đền bù shop)</option>
                 </select>
               </div>
 

@@ -63,6 +63,28 @@ export const orderService = {
     );
     return data;
   },
+
+  async shipReturn(returnSn, trackingNumber = "") {
+    const data = await api.post("/simulator/returns/buyer_ship", {
+      return_sn: returnSn,
+      ...(trackingNumber ? { tracking_number: trackingNumber } : {}),
+    });
+    return data;
+  },
+
+  async acceptReturnOffer(returnSn) {
+    const data = await api.post("/simulator/returns/buyer_accept_offer", {
+      return_sn: returnSn,
+    });
+    return data;
+  },
+
+  async cancelReturnRequest(returnSn) {
+    const data = await api.post("/simulator/returns/buyer_cancel", {
+      return_sn: returnSn,
+    });
+    return data;
+  },
 };
 
 export default orderService;

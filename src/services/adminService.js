@@ -24,28 +24,34 @@ export const adminService = {
     };
   },
 
-  async reviewReturn(returnSn, action, reason = "") {
+  async reviewReturn(returnSn, action, notes = "") {
     return await api.post("/simulator/admin/returns/review", {
       return_sn: returnSn,
-      action, // "APPROVE" | "REJECT"
-      reason,
+      action,
+      notes,
     });
   },
 
-  async warehouseInbound(returnSn, result, inspectionNotes = "") {
+  async reverseDeliverReturn(returnSn) {
+    return await api.post("/simulator/admin/returns/reverse_deliver", {
+      return_sn: returnSn,
+    });
+  },
+
+  async warehouseInbound(returnSn, inspectionResult, notes = "") {
     return await api.post("/simulator/admin/returns/warehouse_inbound", {
       return_sn: returnSn,
-      result, // "PASS" | "FAIL"
-      inspection_notes: inspectionNotes,
+      inspection_result: inspectionResult, // "PASS" | "FAIL"
+      notes,
     });
   },
 
-  async arbitrateDispute(returnSn, verdict, compensationAmount = 0, rulingNotes = "") {
+  async arbitrateDispute(returnSn, ruling, compensationAmount = 0, notes = "") {
     return await api.post("/simulator/admin/returns/arbitrate_dispute", {
       return_sn: returnSn,
-      verdict, // "BUYER_WIN" | "SELLER_WIN"
+      ruling, // "BUYER_WIN" | "SELLER_WIN" | "PLATFORM_COMPENSATE"
       compensation_amount: Number(compensationAmount) || 0,
-      ruling_notes: rulingNotes,
+      notes,
     });
   },
 
