@@ -265,7 +265,6 @@ function ProductDetail({ product: p }) {
         />
         <div className={s.purchase}>
           <h1>
-            {p.mall && <span className={s.mallBadge}>Mall</span>}
             {p.title}
           </h1>
           <div className={s.metrics}>

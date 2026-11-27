@@ -521,7 +521,6 @@ export default function CheckoutPage() {
             aria-label={`${group.shop.name} checkout`}
           >
             <div className={s.shopHeading}>
-              <span className={s.mallBadge}>Mall</span>
               <Link to={`/shop/${group.shop.id}`}>{group.shop.name}</Link>
               <button
                 onClick={() => setEditor({ type: "chat", shop: group.shop })}

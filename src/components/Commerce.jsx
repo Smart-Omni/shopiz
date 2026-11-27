@@ -28,7 +28,6 @@ export function ProductCard({ product, flash = false }) {
             e.currentTarget.parentElement.classList.add(s.imageFallback);
           }}
         />
-        {!flash && product.mall && <span className={s.mallBadge}>Mall</span>}
         <span className={s.discount}>−{product.discount}%</span>
         {!flash && (
           <span className={s.shippingBadge}>

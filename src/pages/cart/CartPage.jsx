@@ -75,7 +75,6 @@ function CartRow({ line, max }) {
         </Link>
         <div>
           <Link className={s.productTitle} to={`/product/${line.productId}`}>
-            {line.product.mall && <span className={s.mallBadge}>Mall</span>}
             {line.product.title}
           </Link>
           <small>
@@ -231,11 +230,7 @@ export default function CartPage() {
                     label={`Select ${group.seller} products`}
                     hideLabel
                   />
-                  {group.lines.some((line) => line.product.mall) ? (
-                    <span className={s.sellerMall}>Mall</span>
-                  ) : (
-                    <Store size={17} />
-                  )}
+                  <Store size={17} />
                   <h2>{group.seller}</h2>
                   <Link
                     to={`/shop/${getProductDetails(group.lines[0].product).seller.id}`}

@@ -168,7 +168,6 @@ function Storefront({ shop }) {
           <div className={s.brandRow}>
             <span className={s.avatar}>
               <Store size={35} strokeWidth={1.2} />
-              <small>Mall</small>
             </span>
             <div>
               <h1>{shop.name}</h1>

@@ -138,7 +138,6 @@ export default function ShopSelectPage() {
                   <div className={s.shopInfo}>
                     <h2>{shop.shop_name}</h2>
                     <div className={s.shopSub}>
-                      {shop.isMall && <span className={s.mallPill}>Mall</span>}
                       <span>ID: {shop.shop_id}</span>
                       <span>·</span>
                       <span>{shop.region || "VN"}</span>

@@ -323,7 +323,6 @@ export default function PurchasesPage() {
                 {groups.map((group) => (
                   <section key={group.shop.id}>
                     <header className={s.shopHeader}>
-                      <span className={s.mall}>Mall</span>
                       <Link
                         to={`/shop/${group.shop.id}`}
                         className={s.shopName}
