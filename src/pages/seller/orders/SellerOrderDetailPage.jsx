@@ -47,12 +47,33 @@ const TIMELINE_STEPS = [
   { key: "Delivered & Completed", label: "Giao hàng thành công", icon: CheckCircle2 },
 ];
 
+const SELLER_CANCEL_REASONS = [
+  {
+    id: "OUT_OF_STOCK",
+    label: "Hết hàng",
+    desc: "Kho của shop không còn đủ số lượng sản phẩm để giao hoặc hàng bị lỗi/hư hỏng trước khi đóng gói.",
+  },
+  {
+    id: "UNDELIVERABLE_AREA",
+    label: "Không thể giao hàng cho khu vực này",
+    desc: "Địa chỉ của Người mua nằm ngoài phạm vi hỗ trợ lấy/giao hàng của đơn vị vận chuyển hoặc quá xa.",
+  },
+  {
+    id: "CUSTOMER_REQUEST",
+    label: "Theo yêu cầu của Người mua",
+    desc: "Người mua nhắn tin qua chat yêu cầu shop hủy đơn giúp (vẫn tính vào tỷ lệ hủy đơn của Shop).",
+  },
+];
+
 export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
   const [actionNotice, setActionNotice] = useState("");
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedCancelReason, setSelectedCancelReason] = useState("OUT_OF_STOCK");
+  const [cancelling, setCancelling] = useState(false);
 
   const fetchOrderDetail = () => {
     if (!orderSn) return;
@@ -113,6 +134,21 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
       fetchOrderDetail();
     } catch (err) {
       setActionNotice(err.message || "Không thể xử lý yêu cầu hủy.");
+    }
+  };
+
+  const handleSellerCancel = async () => {
+    if (cancelling) return;
+    setCancelling(true);
+    try {
+      await sellerService.sellerCancelOrder(orderSn, selectedCancelReason);
+      setActionNotice(`Đã hủy đơn hàng #${orderSn}.`);
+      setCancelModalOpen(false);
+      fetchOrderDetail();
+    } catch (err) {
+      setActionNotice(err.message || "Hủy đơn hàng thất bại.");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -519,6 +555,96 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
           </div>
         </div>
       </div>
+
+      {/* 7. Bottom Seller Cancel Order Bar (only before carrier handover) */}
+      {["UNPAID", "READY_TO_SHIP", "PROCESSED"].includes(order.order_status) &&
+        pkg?.logistics_status !== "LOGISTICS_HANDED_OVER" && (
+        <div className={s.bottomCancelBar}>
+          <div className={s.bottomCancelHint}>
+            <AlertCircle size={15} color="#fa8c16" />
+            <span>
+              Chỉ có thể tự hủy đơn khi chưa bàn giao cho ĐVVC. Đơn hủy chủ động từ Shop sẽ tính vào Tỷ lệ đơn hàng không thành công (NFR).
+            </span>
+          </div>
+          <button
+            type="button"
+            className={s.btnDangerOutline}
+            onClick={() => setCancelModalOpen(true)}
+          >
+            Hủy đơn hàng
+          </button>
+        </div>
+      )}
+
+      {/* Seller Cancel Reason Modal */}
+      {cancelModalOpen && (
+        <div
+          className={s.modalOverlay}
+          onClick={() => {
+            if (!cancelling) setCancelModalOpen(false);
+          }}
+        >
+          <div className={s.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div className={s.modalHeader}>
+              <h3>Hủy đơn hàng #{order.order_sn}</h3>
+              <button
+                type="button"
+                className={s.modalClose}
+                disabled={cancelling}
+                onClick={() => setCancelModalOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className={s.modalBody}>
+              <div className={s.nfrWarningBox}>
+                <strong>Lưu ý về Sao Quả Tạ &amp; NFR:</strong> Bất kỳ thao tác chủ động bấm hủy đơn nào từ tài khoản Người bán (kể cả chọn &ldquo;Theo yêu cầu của Người mua&rdquo;) đều được tính vào Tỷ lệ đơn hàng không thành công (NFR).
+              </div>
+              <div className={s.reasonList}>
+                {SELLER_CANCEL_REASONS.map((reason) => (
+                  <label
+                    key={reason.id}
+                    className={`${s.reasonOption} ${
+                      selectedCancelReason === reason.id ? s.reasonOptionActive : ""
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="sellerCancelReason"
+                      value={reason.id}
+                      checked={selectedCancelReason === reason.id}
+                      onChange={() => setSelectedCancelReason(reason.id)}
+                      disabled={cancelling}
+                    />
+                    <div>
+                      <div className={s.reasonTitle}>{reason.label}</div>
+                      <div className={s.reasonDesc}>{reason.desc}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className={s.modalFooter}>
+              <button
+                type="button"
+                className={s.btnAwb}
+                disabled={cancelling}
+                onClick={() => setCancelModalOpen(false)}
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                className={s.btnPrimary}
+                disabled={cancelling}
+                onClick={handleSellerCancel}
+              >
+                {cancelling ? "Đang hủy..." : "Xác nhận"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notice */}
       {actionNotice && (

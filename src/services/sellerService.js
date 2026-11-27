@@ -59,6 +59,14 @@ export const sellerService = {
     return data;
   },
 
+  async sellerCancelOrder(orderSn, cancelReason) {
+    const data = await api.post("/simulator/order/seller_cancel", {
+      order_sn: orderSn,
+      cancel_reason: cancelReason,
+    });
+    return data;
+  },
+
   async generateAwb(orderSn) {
     const data = await api.post("/simulator/order/generate_awb", {
       order_sn: orderSn,

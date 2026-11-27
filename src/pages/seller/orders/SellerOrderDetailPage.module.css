@@ -623,3 +623,141 @@
   z-index: 9999;
   animation: fadeIn 0.2s ease-out;
 }
+
+.bottomCancelBar {
+  margin-top: 16px;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.bottomCancelHint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #595959;
+}
+
+.btnDangerOutline {
+  background: #ffffff;
+  border: 1px solid #ff4d4f;
+  color: #ff4d4f;
+  border-radius: 4px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btnDangerOutline:hover {
+  background: #fff1f0;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalCard {
+  background: #ffffff;
+  border-radius: 6px;
+  width: 520px;
+  max-width: 92vw;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 15px;
+  color: #262626;
+}
+
+.modalClose {
+  background: transparent;
+  border: 0;
+  font-size: 20px;
+  color: #8c8c8c;
+  cursor: pointer;
+}
+
+.modalBody {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.nfrWarningBox {
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #873800;
+  line-height: 1.45;
+}
+
+.reasonList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reasonOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.reasonOptionActive {
+  border-color: #ee4d2d;
+  background: #fff2e8;
+}
+
+.reasonTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 2px;
+}
+
+.reasonDesc {
+  font-size: 12px;
+  color: #595959;
+  line-height: 1.4;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+}
