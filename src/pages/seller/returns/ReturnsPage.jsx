@@ -19,6 +19,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import api from "../../../services/api";
+import { getThumbnailUrl } from "../../../utils/imageUrl";
 import SellerPagination from "../SellerPagination";
 import s from "./ReturnsPage.module.css";
 
@@ -488,14 +489,14 @@ export default function ReturnsPage({ shopId = 727720655 }) {
           <thead>
             <tr>
               <th style={{ width: "22%" }}>Sản phẩm</th>
-              <th style={{ width: "12%" }}>Số tiền hoàn cho Người mua</th>
-              <th style={{ width: "12%" }}>Số tiền bồi thường cho Người bán</th>
-              <th style={{ width: "12%" }}>Lý do</th>
-              <th style={{ width: "12%" }}>Lý do điều chỉnh bởi Shopee</th>
-              <th style={{ width: "10%" }}>Phương án cho Người mua</th>
+              <th style={{ width: "10%" }}>Số tiền hoàn cho Người mua</th>
+              <th style={{ width: "9%" }}>Số tiền bồi thường cho Người bán</th>
+              <th style={{ width: "14%" }}>Lý do</th>
+              <th style={{ width: "11%" }}>Lý do điều chỉnh bởi Shopee</th>
+              <th style={{ width: "9%" }}>Phương án cho Người mua</th>
               <th style={{ width: "10%" }}>Trạng thái</th>
-              <th style={{ width: "10%" }}>Vận chuyển</th>
-              <th style={{ width: "10%" }}>Thao tác</th>
+              <th style={{ width: "7%" }}>Vận chuyển</th>
+              <th style={{ width: "8%" }}>Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -554,14 +555,16 @@ export default function ReturnsPage({ shopId = 727720655 }) {
                       {r.items && r.items.length > 0 ? (
                         <div className={s.itemsWrap}>
                           {r.items.map((it, idx) => {
-                            const itImg = it.image || it.image_url || it.image_info?.image_url;
+                            const rawImg = it.image || it.image_url || it.image_info?.image_url;
+                            const itImg = getThumbnailUrl(rawImg, 100);
                             return (
                               <div key={idx} className={s.prodItem}>
                                 <div className={s.prodThumb} style={{ overflow: "hidden", position: "relative" }}>
                                   {itImg ? (
                                     <img
                                       src={itImg}
-                                      alt=""
+                                      alt={it.item_name}
+                                      loading="lazy"
                                       style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                                       onError={(e) => {
                                         e.currentTarget.style.display = "none";
@@ -576,7 +579,7 @@ export default function ReturnsPage({ shopId = 727720655 }) {
                                   </div>
                                 </div>
                                 <div className={s.prodInfo}>
-                                  <span className={s.prodName}>{it.item_name}</span>
+                                  <span className={s.prodName} title={it.item_name}>{it.item_name}</span>
                                   {it.model_name && (
                                     <span className={s.modelName}>Phân loại: {it.model_name}</span>
                                   )}
