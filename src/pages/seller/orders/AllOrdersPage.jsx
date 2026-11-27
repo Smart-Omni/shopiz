@@ -293,7 +293,7 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
       const res = await sellerService.shipOrder(orderSn);
       const newStatus = res?.order_status || "PROCESSED";
       const trackingNo = res?.tracking_number;
-      setActionNotice(`Đã sắp xếp giao hàng thành công cho đơn #${orderSn}!`);
+      setActionNotice(`Đã chuẩn bị hàng cho đơn #${orderSn}!`);
       setOrders((prev) =>
         prev.map((o) => {
           if (o.order_sn !== orderSn) return o;
@@ -325,7 +325,37 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
         }),
       );
     } catch (err) {
-      setActionNotice(err.message || `Sắp xếp giao hàng cho đơn #${orderSn} thất bại.`);
+      setActionNotice(err.message || `Chuẩn bị hàng cho đơn #${orderSn} thất bại.`);
+    }
+  };
+
+  // Handover (Giao hàng) after Chuẩn bị hàng
+  const handleHandover = async (orderSn) => {
+    try {
+      await sellerService.handoverOrder(orderSn);
+      setActionNotice(`Đã bàn giao đơn #${orderSn} cho ĐVVC — chờ ĐVVC quét mã lấy hàng!`);
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.order_sn !== orderSn) return o;
+          const currentPackages = o.packages || [];
+          const updatedPackages =
+            currentPackages.length > 0
+              ? currentPackages.map((pkg) => ({
+                  ...pkg,
+                  logistics_status: "LOGISTICS_HANDED_OVER",
+                }))
+              : [
+                  {
+                    package_number: `PKG-${orderSn}`,
+                    logistics_status: "LOGISTICS_HANDED_OVER",
+                    document_status: "READY",
+                  },
+                ];
+          return { ...o, packages: updatedPackages };
+        }),
+      );
+    } catch (err) {
+      setActionNotice(err.message || `Bàn giao đơn #${orderSn} thất bại.`);
     }
   };
 
@@ -743,8 +773,27 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
                               className={s.actionLinkBlue}
                               onClick={() => handleArrangeShipment(order.order_sn)}
                             >
+                              Chuẩn bị hàng
+                            </button>
+                          ) : null}
+
+                          {order.order_status === "PROCESSED" &&
+                            order.packages?.[0]?.logistics_status !== "LOGISTICS_HANDED_OVER" ? (
+                            <button
+                              type="button"
+                              className={s.actionLinkBlue}
+                              onClick={() => handleHandover(order.order_sn)}
+                              title="Bàn giao kiện hàng đã đóng gói cho đơn vị vận chuyển"
+                            >
                               Giao
                             </button>
+                          ) : null}
+
+                          {order.order_status === "PROCESSED" &&
+                            order.packages?.[0]?.logistics_status === "LOGISTICS_HANDED_OVER" ? (
+                            <span style={{ fontSize: "12px", color: "#52c41a", fontWeight: 500 }}>
+                              Đã bàn giao (Chờ lấy)
+                            </span>
                           ) : null}
 
                           {hasAwb || order.order_status === "PROCESSED" ? (

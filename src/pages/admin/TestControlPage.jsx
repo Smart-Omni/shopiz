@@ -13,13 +13,15 @@ import {
   Sliders,
   CheckCircle2,
   AlertTriangle,
-  Info
+  Info,
+  Truck
 } from "lucide-react";
 import adminService from "../../services/adminService";
 import ArbitrationTab from "./tabs/ArbitrationTab";
 import WebhookTab from "./tabs/WebhookTab";
 import FaultInjectionTab from "./tabs/FaultInjectionTab";
 import OrderLifecycleTab from "./tabs/OrderLifecycleTab";
+import CarrierSimulationTab from "./tabs/CarrierSimulationTab";
 import OAuthTab from "./tabs/OAuthTab";
 import s from "./TestControl.module.css";
 
@@ -273,6 +275,14 @@ export default function TestControlPage() {
           </button>
 
           <button
+            className={`${s.tabBtn} ${activeTab === "logistics" ? s.activeTab : ""}`}
+            onClick={() => handleTabChange("logistics")}
+          >
+            <Truck size={16} />
+            <span>Vận chuyển & Quét mã (Carrier Logistics)</span>
+          </button>
+
+          <button
             className={`${s.tabBtn} ${activeTab === "oauth" ? s.activeTab : ""}`}
             onClick={() => handleTabChange("oauth")}
           >
@@ -301,6 +311,10 @@ export default function TestControlPage() {
 
         {activeTab === "orders" && (
           <OrderLifecycleTab showToast={showToast} />
+        )}
+
+        {activeTab === "logistics" && (
+          <CarrierSimulationTab showToast={showToast} />
         )}
 
         {activeTab === "oauth" && (

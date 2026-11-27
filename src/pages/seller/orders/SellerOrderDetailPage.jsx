@@ -83,11 +83,21 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
 
   const handleArrangeShipment = async () => {
     try {
-      const res = await sellerService.shipOrder(orderSn);
-      setActionNotice(`Đã sắp xếp giao hàng thành công cho đơn #${orderSn}!`);
+      await sellerService.shipOrder(orderSn);
+      setActionNotice(`Đã chuẩn bị hàng cho đơn #${orderSn}!`);
       fetchOrderDetail();
     } catch (err) {
-      setActionNotice(err.message || `Sắp xếp giao hàng thất bại.`);
+      setActionNotice(err.message || `Chuẩn bị hàng thất bại.`);
+    }
+  };
+
+  const handleHandover = async () => {
+    try {
+      await sellerService.handoverOrder(orderSn);
+      setActionNotice(`Đã bàn giao đơn #${orderSn} cho ĐVVC — chờ ĐVVC quét mã lấy hàng!`);
+      fetchOrderDetail();
+    } catch (err) {
+      setActionNotice(err.message || `Bàn giao đơn hàng thất bại.`);
     }
   };
 
@@ -221,6 +231,18 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
             </button>
           ) : null}
 
+          {order.order_status === "PROCESSED" &&
+            pkg?.logistics_status !== "LOGISTICS_HANDED_OVER" ? (
+            <button
+              type="button"
+              className={s.btnPrimary}
+              onClick={handleHandover}
+              title="Bàn giao kiện hàng đã đóng gói cho đơn vị vận chuyển"
+            >
+              <Truck size={15} /> Giao
+            </button>
+          ) : null}
+
           {hasAwb && (
             <button
               type="button"
@@ -323,8 +345,12 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
               <span className={s.infoVal}>
                 {pkg?.logistics_status === "LOGISTICS_NOT_START"
                   ? "Chưa lấy hàng"
-                  : pkg?.logistics_status === "LOGISTICS_PICKED_UP"
-                  ? "Đã lấy hàng"
+                  : pkg?.logistics_status === "LOGISTICS_REQUEST_CREATED"
+                  ? "Đã chuẩn bị hàng - Chờ bàn giao"
+                  : pkg?.logistics_status === "LOGISTICS_HANDED_OVER"
+                  ? "Đã bàn giao - Chờ ĐVVC lấy hàng"
+                  : pkg?.logistics_status === "LOGISTICS_PICKED_UP" || pkg?.logistics_status === "LOGISTICS_PICKUP_DONE"
+                  ? "Đang vận chuyển"
                   : pkg?.logistics_status === "LOGISTICS_DELIVERED"
                   ? "Đã giao thành công"
                   : pkg?.logistics_status || "Đang xử lý"}

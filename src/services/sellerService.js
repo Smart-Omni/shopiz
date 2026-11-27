@@ -44,6 +44,13 @@ export const sellerService = {
     return data;
   },
 
+  async handoverOrder(orderSn) {
+    const data = await api.post("/simulator/order/handover", {
+      order_sn: orderSn,
+    });
+    return data;
+  },
+
   async generateAwb(orderSn) {
     const data = await api.post("/simulator/order/generate_awb", {
       order_sn: orderSn,
