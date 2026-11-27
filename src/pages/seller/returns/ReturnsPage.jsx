@@ -113,6 +113,7 @@ export default function ReturnsPage({ shopId = 727720655 }) {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [expandedReturnItems, setExpandedReturnItems] = useState({});
 
   // Reset page when priority or action filter changes
   useEffect(() => {
@@ -554,7 +555,10 @@ export default function ReturnsPage({ shopId = 727720655 }) {
                     <td className={s.prodCell}>
                       {r.items && r.items.length > 0 ? (
                         <div className={s.itemsWrap}>
-                          {r.items.map((it, idx) => {
+                          {(expandedReturnItems[r.return_sn]
+                            ? r.items
+                            : r.items.slice(0, 2)
+                          ).map((it, idx) => {
                             const rawImg = it.image || it.image_url || it.image_info?.image_url;
                             const itImg = getThumbnailUrl(rawImg, 100);
                             return (
@@ -588,6 +592,31 @@ export default function ReturnsPage({ shopId = 727720655 }) {
                               </div>
                             );
                           })}
+                          {r.items.length > 2 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setExpandedReturnItems((prev) => ({
+                                  ...prev,
+                                  [r.return_sn]: !prev[r.return_sn],
+                                }))
+                              }
+                              style={{
+                                background: "none",
+                                border: 0,
+                                padding: "2px 0",
+                                fontSize: 11,
+                                color: "#ee4d2d",
+                                cursor: "pointer",
+                                textAlign: "left",
+                                fontWeight: 500,
+                              }}
+                            >
+                              {expandedReturnItems[r.return_sn]
+                                ? "Thu gọn ▴"
+                                : `+${r.items.length - 2} sản phẩm khác ▾`}
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <div className={s.prodItem}>

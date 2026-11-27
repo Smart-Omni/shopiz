@@ -11,6 +11,8 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  XCircle,
+  RotateCcw,
   FileText,
   Calendar,
   Phone,
@@ -37,6 +39,7 @@ const STATUS_DISPLAY_MAP = {
   COMPLETED: { text: "Đã giao", color: "#52c41a", bg: "#f6ffed" },
   IN_CANCEL: { text: "Yêu cầu hủy", color: "#eb2f96", bg: "#fff0f6" },
   CANCELLED: { text: "Đã hủy", color: "#8c8c8c", bg: "#f5f5f5" },
+  TO_RETURN: { text: "Trả hàng / Hoàn tiền", color: "#fa8c16", bg: "#fff7e6" },
 };
 
 const TIMELINE_STEPS = [
@@ -329,43 +332,97 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
       {/* 3. Horizontal Visual Stepper Section */}
       <div className={s.stepperCard}>
         <div className={s.stepperTrack}>
-          {TIMELINE_STEPS.map((step, idx) => {
-            const IconComponent = step.icon;
-            // Match with order.timeline if available
-            const backendStep = (order.timeline || []).find((t) => t.title === step.key);
-            const isDone =
-              backendStep?.status === "DONE" ||
-              (step.key === "Order Placed" && Boolean(order.order_sn)) ||
-              (step.key === "Payment Confirmed" && order.order_status !== "UNPAID") ||
-              (step.key === "Logistics Arranged" && ["PROCESSED", "SHIPPED", "COMPLETED"].includes(order.order_status)) ||
-              (step.key === "Courier Picked Up (In Transit)" && ["SHIPPED", "COMPLETED"].includes(order.order_status)) ||
-              (step.key === "Delivered & Completed" && order.order_status === "COMPLETED");
+          {(() => {
+            let stepsToRender;
+            if (order.order_status === "CANCELLED") {
+              stepsToRender = [
+                { key: "Order Placed", label: "Đặt hàng thành công", icon: Clock, state: "done" },
+                ...(order.pay_time
+                  ? [{ key: "Payment Confirmed", label: "Đã thanh toán", icon: CreditCard, state: "done" }]
+                  : []),
+                {
+                  key: "Order Cancelled",
+                  label: "Đơn hàng đã hủy",
+                  icon: XCircle,
+                  state: "cancelled",
+                  note: order.cancel_reason || order.buyer_cancel_reason || null,
+                },
+              ];
+            } else if (order.order_status === "IN_CANCEL") {
+              stepsToRender = [
+                { key: "Order Placed", label: "Đặt hàng thành công", icon: Clock, state: "done" },
+                { key: "Payment Confirmed", label: "Đã thanh toán", icon: CreditCard, state: "done" },
+                {
+                  key: "Cancellation Requested",
+                  label: "Đang yêu cầu hủy",
+                  icon: AlertCircle,
+                  state: "warning",
+                  note: order.buyer_cancel_reason || order.cancel_reason || null,
+                },
+              ];
+            } else {
+              const baseSteps = TIMELINE_STEPS.map((step) => {
+                const backendStep = (order.timeline || []).find((t) => t.title === step.key);
+                const isDone =
+                  backendStep?.status === "DONE" ||
+                  (step.key === "Order Placed" && Boolean(order.order_sn)) ||
+                  (step.key === "Payment Confirmed" && order.order_status !== "UNPAID") ||
+                  (step.key === "Logistics Arranged" && ["PROCESSED", "SHIPPED", "TO_CONFIRM_RECEIVE", "COMPLETED", "TO_RETURN"].includes(order.order_status)) ||
+                  (step.key === "Courier Picked Up (In Transit)" && ["SHIPPED", "TO_CONFIRM_RECEIVE", "COMPLETED", "TO_RETURN"].includes(order.order_status)) ||
+                  (step.key === "Delivered & Completed" && ["COMPLETED", "TO_RETURN"].includes(order.order_status));
+                return { ...step, state: isDone ? "done" : "pending" };
+              });
+              stepsToRender =
+                order.order_status === "TO_RETURN"
+                  ? [
+                      ...baseSteps,
+                      {
+                        key: "Return / Refund",
+                        label: "Trả hàng / Hoàn tiền",
+                        icon: RotateCcw,
+                        state: "warning",
+                      },
+                    ]
+                  : baseSteps;
+            }
 
-            const stepTime = backendStep?.time
-              ? new Date(backendStep.time).toLocaleTimeString("vi-VN", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  day: "2-digit",
-                  month: "2-digit",
-                })
-              : null;
+            return stepsToRender.map((step) => {
+              const IconComponent = step.icon;
+              const backendStep = (order.timeline || []).find((t) => t.title === step.key);
+              const stepTime = backendStep?.time
+                ? new Date(backendStep.time).toLocaleTimeString("vi-VN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    day: "2-digit",
+                    month: "2-digit",
+                  })
+                : null;
+              const stepClass =
+                step.state === "done"
+                  ? s.stepDone
+                  : step.state === "cancelled"
+                  ? s.stepCancelled
+                  : step.state === "warning"
+                  ? s.stepWarning
+                  : s.stepPending;
 
-            return (
-              <div
-                key={step.key}
-                className={`${s.stepItem} ${isDone ? s.stepDone : s.stepPending}`}
-              >
-                <div className={s.stepIconWrap}>
-                  <IconComponent size={20} />
+              return (
+                <div key={step.key} className={`${s.stepItem} ${stepClass}`}>
+                  <div className={s.stepIconWrap}>
+                    <IconComponent size={20} />
+                  </div>
+                  <span className={s.stepTitle}>{step.label}</span>
+                  {stepTime && <span className={s.stepTime}>{stepTime}</span>}
+                  {backendStep?.tracking && (
+                    <span className={s.stepTracking}>{backendStep.tracking}</span>
+                  )}
+                  {step.note && (
+                    <span className={s.stepTime} style={{ marginTop: 2 }}>{step.note}</span>
+                  )}
                 </div>
-                <span className={s.stepTitle}>{step.label}</span>
-                {stepTime && <span className={s.stepTime}>{stepTime}</span>}
-                {backendStep?.tracking && (
-                  <span className={s.stepTracking}>{backendStep.tracking}</span>
-                )}
-              </div>
-            );
-          })}
+              );
+            });
+          })()}
         </div>
       </div>
 
@@ -423,6 +480,8 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
                   ? "Đang vận chuyển"
                   : pkg?.logistics_status === "LOGISTICS_DELIVERED"
                   ? "Đã giao thành công"
+                  : pkg?.logistics_status === "LOGISTICS_CANCELLED"
+                  ? "Đã hủy vận chuyển"
                   : pkg?.logistics_status || "Đang xử lý"}
               </span>
             </div>

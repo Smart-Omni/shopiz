@@ -235,6 +235,38 @@
   background-color: #e8e8e8;
 }
 
+.stepCancelled::before,
+.stepCancelled::after {
+  background-color: #ff4d4f;
+}
+
+.stepCancelled .stepIconWrap {
+  border-color: #ff4d4f;
+  background: #ff4d4f;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(255, 77, 79, 0.15);
+}
+
+.stepCancelled .stepTitle {
+  color: #cf1322;
+}
+
+.stepWarning::before,
+.stepWarning::after {
+  background-color: #fa8c16;
+}
+
+.stepWarning .stepIconWrap {
+  border-color: #fa8c16;
+  background: #fa8c16;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(250, 140, 22, 0.15);
+}
+
+.stepWarning .stepTitle {
+  color: #d46b08;
+}
+
 .stepIconWrap {
   width: 42px;
   height: 42px;

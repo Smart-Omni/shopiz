@@ -150,6 +150,7 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [expandedOrderItems, setExpandedOrderItems] = useState({});
 
   // Reset to page 1 whenever activeTabId or subTab changes
   useEffect(() => {
@@ -724,7 +725,10 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
                       <td className={s.productCol}>
                         {order.items && order.items.length > 0 ? (
                           <div className={s.itemList}>
-                            {order.items.map((item) => {
+                            {(expandedOrderItems[order.order_sn]
+                              ? order.items
+                              : order.items.slice(0, 2)
+                            ).map((item) => {
                               const rawImg = item.image || item.image_url || item.image_info?.image_url;
                               const itemImg = getThumbnailUrl(rawImg, 100);
                               return (
@@ -759,6 +763,31 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
                                 </div>
                               );
                             })}
+                            {order.items.length > 2 && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setExpandedOrderItems((prev) => ({
+                                    ...prev,
+                                    [order.order_sn]: !prev[order.order_sn],
+                                  }))
+                                }
+                                style={{
+                                  background: "none",
+                                  border: 0,
+                                  padding: "2px 0",
+                                  fontSize: 12,
+                                  color: "#ee4d2d",
+                                  cursor: "pointer",
+                                  textAlign: "left",
+                                  fontWeight: 500,
+                                }}
+                              >
+                                {expandedOrderItems[order.order_sn]
+                                  ? "Thu gọn ▴"
+                                  : `Xem thêm ${order.items.length - 2} sản phẩm khác ▾`}
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <div className={s.productItem}>
