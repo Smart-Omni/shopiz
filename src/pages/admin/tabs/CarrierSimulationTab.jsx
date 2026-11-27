@@ -12,16 +12,17 @@ import adminService from "../../../services/adminService";
 import s from "./OrderLifecycle.module.css";
 
 const STAGE_FILTERS = [
-  { key: "ALL", label: "Tất cả kiện hàng" },
+  { key: "ACTIVE", label: "Chờ lấy & Đang vận chuyển" },
   { key: "TO_PICKUP", label: "Chờ ĐVVC lấy hàng (PROCESSED)" },
   { key: "SHIPPED", label: "Đang vận chuyển (SHIPPED)" },
   { key: "COMPLETED", label: "Đã giao (COMPLETED)" },
+  { key: "ALL", label: "Tất cả kiện hàng" },
 ];
 
 export default function CarrierSimulationTab({ showToast }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [stageFilter, setStageFilter] = useState("TO_PICKUP");
+  const [stageFilter, setStageFilter] = useState("ACTIVE");
   const [selectedShopId, setSelectedShopId] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
@@ -44,6 +45,9 @@ export default function CarrierSimulationTab({ showToast }) {
 
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
+      if (stageFilter === "ACTIVE" && o.order_status !== "PROCESSED" && o.order_status !== "SHIPPED") {
+        return false;
+      }
       if (stageFilter === "TO_PICKUP" && o.order_status !== "PROCESSED") return false;
       if (stageFilter === "SHIPPED" && o.order_status !== "SHIPPED") return false;
       if (stageFilter === "COMPLETED" && o.order_status !== "COMPLETED") return false;
@@ -59,6 +63,16 @@ export default function CarrierSimulationTab({ showToast }) {
       return true;
     });
   }, [orders, stageFilter, searchQuery]);
+
+  const stageCounts = useMemo(() => {
+    return {
+      ACTIVE: orders.filter((o) => o.order_status === "PROCESSED" || o.order_status === "SHIPPED").length,
+      TO_PICKUP: orders.filter((o) => o.order_status === "PROCESSED").length,
+      SHIPPED: orders.filter((o) => o.order_status === "SHIPPED").length,
+      COMPLETED: orders.filter((o) => o.order_status === "COMPLETED").length,
+      ALL: orders.length,
+    };
+  }, [orders]);
 
   const handedOverOrders = useMemo(() => {
     return orders.filter(
@@ -183,7 +197,7 @@ export default function CarrierSimulationTab({ showToast }) {
           >
             {STAGE_FILTERS.map((f) => (
               <option key={f.key} value={f.key}>
-                {f.label}
+                {f.label} ({stageCounts[f.key] ?? 0})
               </option>
             ))}
           </select>

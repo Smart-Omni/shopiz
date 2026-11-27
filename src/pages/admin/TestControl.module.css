@@ -211,22 +211,17 @@
 /* Navigation Tabs */
 .tabsNav {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   border-bottom: 2px solid #e5e7eb;
   margin-bottom: 24px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.tabsNav::-webkit-scrollbar {
-  display: none;
 }
 
 .tabBtn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 18px;
+  padding: 10px 14px;
   font-size: 13px;
   font-weight: 600;
   color: #6b7280;
