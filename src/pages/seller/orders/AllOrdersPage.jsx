@@ -851,15 +851,15 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
                                 style={{ color: "#52c41a" }}
                                 onClick={() => handleCancellationDecision(order.order_sn, "ACCEPT")}
                               >
-                                Đồng ý
+                                Đồng Ý Huỷ
                               </button>
                               <button
                                 type="button"
                                 className={s.actionLinkBlue}
-                                style={{ color: "#ee4d2d" }}
+                                style={{ color: "#ee4d2d", textAlign: "left", whiteSpace: "normal", lineHeight: 1.3 }}
                                 onClick={() => handleCancellationDecision(order.order_sn, "REJECT")}
                               >
-                                Từ chối
+                                Từ chối vì đã bàn giao cho đơn vị vận chuyển
                               </button>
                             </>
                           ) : null}

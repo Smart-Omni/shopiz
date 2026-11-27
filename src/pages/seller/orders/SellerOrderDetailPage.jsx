@@ -279,14 +279,14 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
                 className={s.btnPrimary}
                 onClick={() => handleCancellationDecision("ACCEPT")}
               >
-                Đồng ý hủy
+                Đồng Ý Huỷ
               </button>
               <button
                 type="button"
                 className={s.btnAwb}
                 onClick={() => handleCancellationDecision("REJECT")}
               >
-                Từ chối hủy
+                Từ chối vì đã bàn giao cho đơn vị vận chuyển
               </button>
             </>
           ) : null}
