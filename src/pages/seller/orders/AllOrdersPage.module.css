@@ -374,6 +374,7 @@
 
 .ordersTable {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   text-align: left;
   font-size: 13px;
@@ -384,7 +385,7 @@
 }
 
 .ordersTable th {
-  padding: 12px 14px;
+  padding: 10px 10px;
   color: #595959;
   font-weight: 600;
   font-size: 12px;
@@ -410,6 +411,9 @@
 }
 
 .thCarrierSelect {
+  width: 100%;
+  max-width: 100%;
+  text-overflow: ellipsis;
   border: 1px solid transparent;
   border-radius: 3px;
   padding: 2px 4px;
@@ -504,13 +508,14 @@
 
 /* Order Data Row */
 .orderDataRow td {
-  padding: 16px 14px;
+  padding: 12px 10px;
   vertical-align: top;
   border-bottom: 1px solid #f0f0f0;
+  overflow-wrap: break-word;
 }
 
 .productCol {
-  min-width: 260px;
+  min-width: 0;
 }
 
 .itemList {
@@ -576,36 +581,41 @@
 }
 
 .paymentCol {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  vertical-align: top;
 }
 
 .paymentAmount {
-  font-size: 14px;
+  display: block;
+  font-size: 13px;
   font-weight: 600;
   color: #222222;
+  margin-bottom: 4px;
 }
 
 .paymentMethod {
+  display: block;
   font-size: 11px;
   color: #8c8c8c;
+  line-height: 1.35;
+  white-space: normal;
 }
 
 .statusCol {
-  min-width: 160px;
+  min-width: 0;
 }
 
 .statusContent {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  white-space: normal;
 }
 
 .statusText {
   font-size: 13px;
   font-weight: 600;
   color: #222222;
+  line-height: 1.35;
 }
 
 .slaWarningText {
@@ -623,7 +633,8 @@
 }
 
 .countdownCol {
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.35;
 }
 
 .countdownText {
@@ -636,7 +647,7 @@
 }
 
 .carrierCol {
-  min-width: 130px;
+  min-width: 0;
 }
 
 .carrierWrap {
@@ -649,15 +660,17 @@
   font-size: 12px;
   font-weight: 500;
   color: #333333;
+  line-height: 1.35;
 }
 
 .trackingNumber {
   font-size: 11px;
   color: #8c8c8c;
+  word-break: break-all;
 }
 
 .actionCol {
-  min-width: 100px;
+  min-width: 0;
 }
 
 .actionLinks {

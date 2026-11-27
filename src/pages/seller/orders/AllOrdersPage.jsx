@@ -563,16 +563,16 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
           <table className={s.ordersTable}>
             <thead>
               <tr>
-                <th style={{ width: "36%" }}>Sản phẩm</th>
-                <th style={{ width: "14%" }}>Tổng cộng</th>
+                <th style={{ width: "31%" }}>Sản phẩm</th>
+                <th style={{ width: "15%" }}>Tổng cộng</th>
                 <th style={{ width: "18%" }}>Trạng thái</th>
-                <th style={{ width: "10%" }}>
+                <th style={{ width: "11%" }}>
                   <div className={s.thWithTooltip}>
                     <span>Đếm ngược</span>
                     <HelpCircle size={13} className={s.thHelpIcon} title="Thời gian còn lại để chuẩn bị hàng" />
                   </div>
                 </th>
-                <th style={{ width: "12%" }}>
+                <th style={{ width: "13%" }}>
                   <div className={s.thCarrierWrap}>
                     <select
                       className={s.thCarrierSelect}
@@ -597,7 +597,7 @@ export default function AllOrdersPage({ shopId = 727720655, onViewDetail }) {
                     </select>
                   </div>
                 </th>
-                <th style={{ width: "10%" }}>Thao tác</th>
+                <th style={{ width: "12%" }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
