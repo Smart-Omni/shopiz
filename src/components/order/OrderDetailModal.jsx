@@ -18,6 +18,7 @@ import sellerService from "../../services/sellerService";
 import { orderService } from "../../services/orderService";
 import { getThumbnailUrl } from "../../utils/imageUrl";
 import { formatPaymentMethod } from "../../utils/paymentMethod";
+import { maskPhone, maskAddress } from "../../utils/maskPrivacy";
 import s from "./OrderDetailModal.module.css";
 
 const money = (n) =>
@@ -277,10 +278,16 @@ export default function OrderDetailModal({
                     </p>
                     <p className={s.recipientPhone}>
                       <Phone size={14} />
-                      <span>{order.recipient?.phone || order.recipient_phone || "—"}</span>
+                      <span>
+                        {isSeller
+                          ? maskPhone(order.recipient?.phone || order.recipient_phone)
+                          : order.recipient?.phone || order.recipient_phone || "—"}
+                      </span>
                     </p>
                     <p className={s.recipientAddress}>
-                      {order.recipient?.address || order.recipient_address || "—"}
+                      {isSeller
+                        ? maskAddress(order.recipient?.address || order.recipient_address)
+                        : order.recipient?.address || order.recipient_address || "—"}
                     </p>
                   </div>
                 </div>

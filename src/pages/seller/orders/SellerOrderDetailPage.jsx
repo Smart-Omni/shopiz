@@ -19,6 +19,7 @@ import {
 import sellerService from "../../../services/sellerService";
 import { getThumbnailUrl } from "../../../utils/imageUrl";
 import { formatPaymentMethod } from "../../../utils/paymentMethod";
+import { maskPhone, maskAddress } from "../../../utils/maskPrivacy";
 import s from "./SellerOrderDetailPage.module.css";
 
 const money = (n) =>
@@ -311,10 +312,10 @@ export default function SellerOrderDetailPage({ shopId, orderSn, onBack }) {
             <div className={s.recipientName}>{recName}</div>
             <div className={s.recipientRow}>
               <Phone size={14} />
-              <span>{recPhone}</span>
+              <span>{maskPhone(recPhone)}</span>
             </div>
             <div className={s.recipientRow}>
-              <span className={s.recipientAddress}>{recAddress}</span>
+              <span className={s.recipientAddress}>{maskAddress(recAddress)}</span>
             </div>
           </div>
         </div>
