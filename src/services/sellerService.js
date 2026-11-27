@@ -59,7 +59,8 @@ export const sellerService = {
   },
 
   getAwbDownloadUrl(orderSn) {
-    return `/api/v2/simulator/order/download_awb?order_sn=${encodeURIComponent(orderSn)}`;
+    const apiBase = api.defaults.baseURL || "/api/v2";
+    return `${apiBase}/simulator/order/download_awb?order_sn=${encodeURIComponent(orderSn)}`;
   },
 
   async batchShipOrders(orderSnList, shippingType = "pickup", pickupTimeId = "", addressId = null) {
@@ -82,13 +83,15 @@ export const sellerService = {
   },
 
   getBatchAwbDownloadUrl(orderSnList, documentType = "shipping_label", printFormat = "thermal") {
+    const apiBase = api.defaults.baseURL || "/api/v2";
     const sns = Array.isArray(orderSnList) ? orderSnList.join(",") : orderSnList;
-    return `/api/v2/simulator/order/batch_download_awb?order_sn_list=${encodeURIComponent(sns)}&doc_type=${encodeURIComponent(documentType)}&print_format=${encodeURIComponent(printFormat)}`;
+    return `${apiBase}/simulator/order/batch_download_awb?order_sn_list=${encodeURIComponent(sns)}&doc_type=${encodeURIComponent(documentType)}&print_format=${encodeURIComponent(printFormat)}`;
   },
 
   getManifestDownloadUrl(orderSnList, carrier = "Shopee Xpress", shopId = null) {
+    const apiBase = api.defaults.baseURL || "/api/v2";
     const sns = Array.isArray(orderSnList) ? orderSnList.join(",") : orderSnList;
-    let url = `/api/v2/simulator/order/manifest?order_sn_list=${encodeURIComponent(sns)}&carrier=${encodeURIComponent(carrier)}`;
+    let url = `${apiBase}/simulator/order/manifest?order_sn_list=${encodeURIComponent(sns)}&carrier=${encodeURIComponent(carrier)}`;
     if (shopId) url += `&shop_id=${encodeURIComponent(shopId)}`;
     return url;
   },
