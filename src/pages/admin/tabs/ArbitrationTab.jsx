@@ -118,14 +118,22 @@ export default function ArbitrationTab({ returns = [], summary = {}, onRefresh, 
   const submitArbitrate = async () => {
     if (!activeModal?.item) return;
     setLoadingAction(true);
+    const computedComp =
+      verdict === "PLATFORM_COMPENSATE" ? Number(activeModal.item.refund_amount || 0) : 0;
     try {
       await adminService.arbitrateDispute(
         activeModal.item.return_sn,
         verdict,
-        compensationAmount,
+        computedComp,
         rulingNotes
       );
-      showToast(verdict === "BUYER_WIN" ? "Phán quyết: Người Mua Thắng (Hoàn tiền)" : "Phán quyết: Người Bán Thắng (Giải ngân & Bồi thường)");
+      showToast(
+        verdict === "BUYER_WIN"
+          ? "Phán quyết: Người Mua Thắng (Hoàn tiền)"
+          : verdict === "PLATFORM_COMPENSATE"
+            ? "Phán quyết: Shopee Đền Bù cho Shop & Hoàn tiền khách"
+            : "Phán quyết: Người Bán Thắng (Giải ngân đơn hàng)"
+      );
       setActiveModal(null);
       onRefresh?.();
     } catch (err) {
@@ -549,20 +557,34 @@ export default function ArbitrationTab({ returns = [], summary = {}, onRefresh, 
                 </select>
               </div>
 
+              {verdict === "PLATFORM_COMPENSATE" && (
+                <div
+                  style={{
+                    background: "#ecfdf5",
+                    border: "1px solid #a7f3d0",
+                    borderRadius: 6,
+                    padding: "10px 12px",
+                    fontSize: 12,
+                    color: "#065f46",
+                  }}
+                >
+                  <strong>Mức đền bù tự động từ Shopee:</strong>{" "}
+                  {money(activeModal.item.refund_amount)} (100% giá trị khiếu nại — tự động cộng vào doanh thu Shop).
+                </div>
+              )}
+
               {verdict === "SELLER_WIN" && (
-                <div className={s.formGroup}>
-                  <label className={s.formLabel}>Số tiền sàn Shopee bồi thường cho Người Bán (VND)</label>
-                  <input
-                    type="number"
-                    className={s.formInput}
-                    value={compensationAmount}
-                    onChange={(e) => setCompensationAmount(Number(e.target.value))}
-                    min={0}
-                    step={10000}
-                  />
-                  <div style={{ fontSize: 11, color: "#6b7280", marginTop: 4 }}>
-                    Số tiền bồi thường thiệt hại hàng hoàn hỏng/mất mát do lỗi vận chuyển hoặc người mua.
-                  </div>
+                <div
+                  style={{
+                    background: "#f5f3ff",
+                    border: "1px solid #ddd6fe",
+                    borderRadius: 6,
+                    padding: "10px 12px",
+                    fontSize: 12,
+                    color: "#5b21b6",
+                  }}
+                >
+                  <strong>Giải ngân cho Shop:</strong> Bác bỏ yêu cầu hoàn tiền của Người mua; Shop nhận đủ doanh thu đơn hàng ban đầu (0 ₫ bồi thường thêm).
                 </div>
               )}
 
